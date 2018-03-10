@@ -14,12 +14,12 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 	
 	
 	if(action === 'procurarProduto'){
-		var data = firebase.database().ref('/lojas/'+loja+'/alimentos'+produto);
+		var data = firebase.database().ref('lojas/'+loja+'/alimentos/'+produto);
 		data.once("value").then(function(snapshot) {
-		var alimentoDesc = snapshot.child('desc');
-		var alimentoTipo = snapshot.child('tipo');
-		var alimentoImage = snapshot.child('image');
-		var r = {
+		var alimentoDesc = snapshot.child("desc").val();
+		var alimentoTipo = snapshot.child('tipo').val();
+		var alimentoImage = snapshot.child('image').val();
+		var message = {
 			"fulfillmentMessages": [{
 				"platform": "FACEBOOK",
 					"card": {
@@ -34,11 +34,11 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 	}]};
 		var responseJson = {};
 		if (source === "facebook") {
-			responseJson= r;
+			responseJson.fulfillmentMessages = message.fulfillmentMessages;
 			
                 } 
                 else {
-                	responseJson = {fulfillmentText: r.length}; 
+                	responseJson = {fulfillmentText: message.fulfillmentText}; 
                 }
                 
         	res.json(responseJson);
