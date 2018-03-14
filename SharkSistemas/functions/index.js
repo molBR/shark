@@ -5,33 +5,17 @@ var firebase = admin.initializeApp(functions.config().firebase);
 
 exports.alimentos = functions.https.onRequest((req, res) => {
 	
-	console.log('Dialogflow Request body: ' + JSON.stringify(req.body));
 	let action = req.body.queryResult.action;
 	let parameters = req.body.queryResult.parameters;
-	let produto = parameters.produto;
-	let loja = req.headers.loja;
+	let product = parameters.product;
+	let store = req.headers.store;
 	let source = req.body.originalDetectIntentRequest.source;
 	
-	
 	if(action === 'procurarProduto'){
-		var data = firebase.database().ref('lojas/'+loja+'/alimentos/'+produto);
+		var data = firebase.database().ref('stores/'+store+'/products');
 		data.once("value").then(function(snapshot) {
-		var alimentoDesc = snapshot.child("desc").val();
-		var alimentoTipo = snapshot.child('tipo').val();
-		var alimentoImage = snapshot.child('image').val();
-		var message = {
-			"fulfillmentMessages": [{
-				"platform": "FACEBOOK",
-					"card": {
-						"title": produto,
-						"subtitle": alimentoDesc,
-						"imageUri": alimentoImage,
-						"buttons": [{
-							"text": "Comprar",
-							"postback": "Comprar"
-						}]
-					}
-	}]};
+		var message = prepareMessage(snapshot);
+
 		var responseJson = {};
 		if (source === "facebook") {
 			responseJson.fulfillmentMessages = message.fulfillmentMessages;
@@ -40,8 +24,10 @@ exports.alimentos = functions.https.onRequest((req, res) => {
                 else {
                 	responseJson = {fulfillmentText: message.fulfillmentText}; 
                 }
-                
+            
+            console.log(JSON.stringify(responseJson.fulfillmentMessages));    
         	res.json(responseJson);
+        	
         	
 		return null;
 		}).catch(error => {
@@ -53,5 +39,46 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 		
 });
 
+function prepareMessage(data){
+	
+	let elements = [];
 
+	data.forEach(function(snapshotProduct){
+		var productDescription = snapshotProduct.child("description").val();
+		var productType = snapshotProduct.child('type').val();
+		var productImage = snapshotProduct.child('image').val();
+		var productName = snapshotProduct.key;
+		var productPreview = {
+       		"title":productName,
+        	"image_url":productImage,
+       		"subtitle":"produto bom",
+        	"buttons":[{
+           		"type":"postback",
+           		"title":"Comprar",
+           		"payload":"postback buy "+ productName
+        	}]
+    	};
+
+    elements.push(productPreview);
+    });
+
+    let message = {
+		"fulfillmentMessages": [{
+			"payload": {
+				"facebook":{
+					"attachment":{
+      					"type":"template",
+     					"payload":{
+        					"template_type":"generic",
+        					"elements":elements
+      					}
+      				}
+    			}
+			}
+		}]
+	};
+
+    return message;
+	
+}
 
