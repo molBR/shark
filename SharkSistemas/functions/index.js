@@ -21,8 +21,9 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 		   	res.json(responseJson);      	
         	return null;
 		}).catch(error => {
-			console.error(error);
-			res.error(500);
+			//console.error(error);
+			let responseJson = prepareError();
+			res.json(responseJson);
 		});	
     }
 
@@ -63,6 +64,7 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 
 
 function prepareMessage(snapshotProduct){
+	console.log("TO TENTANDO FAZER MERDA AQUI");
 	var productDescription = snapshotProduct.child("description").val();
 	var productType = snapshotProduct.child('type').val();
 	var productImage = snapshotProduct.child('image').val();
@@ -98,6 +100,7 @@ function prepareMessage(snapshotProduct){
 }
 
 function prepareResponse(elements, source){
+	console.log("TO TENTANDO FAZER MERDA LA");
 	let message = {
 		"fulfillmentMessages": [{
 			"payload": {
@@ -123,4 +126,10 @@ function prepareResponse(elements, source){
     }
 
     return responseJson;	   	
+}
+
+function prepareError(){
+	let responseJson = {};
+	responseJson = {fulfillmentText: "Não entendi :("};
+	return responseJson;
 }
