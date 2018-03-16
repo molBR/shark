@@ -11,7 +11,6 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 	let source = req.body.originalDetectIntentRequest.source;
 	var elements = [];
 	let dataRef = firebase.database().ref('stores/'+store);
-	
 	if(action === 'searchProduct'){
 		let product = parameters.produto;
 		let data = firebase.database().ref('stores/'+store+'/products/'+product);
@@ -59,14 +58,42 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 				console.error(error);
 				res.error(500);
 			});				
-    }                      
+    }       
+   	else if (action === 'buy'){
+   		let product = parameters.produto;
+		let data = firebase.database().ref('stores/'+store+'/products/'+product);
+		data.once("value").then(function(snapshot) {
+        	if(snapshot.child("valueType").val() === "complex" ){
+        		var vetorzon = [];
+        		snapshot.child("values").forEach(function(snapshotSize){
+        			var vetorzin = [];
+        			var messageVec= null;
+        			snapshotSize.forEach(function(SizeValues){
+        				if(SizeValues.key === "message"){
+        					console.log(SizeValues.val());
+        					messageVec = SizeValues.val();
+        				}else{
+        					vectorzin.push(SizeValues.val());
+        				}
+        			});
+        			var jsonAnswer={"message":messageVec,
+        							"choices":vectorzin};
+        			vetorzon.push(jsonAnswer);
+        		});
+        		console.log(JSON.strigify(vetorzon));
+        	}
+        	return null;
+		}).catch(error => {
+			//console.error(error);
+			let responseJson = prepareError();
+			res.json(responseJson);
+		});
+   	}               
 		
 });
 
 
 function prepareMessage(snapshotProduct){
-	console.log("TO TENTANDO FAZER MERDA AQUI123");
-	console.log("APARECE: " + JSON.stringify(snapshotProduct));
 	var productDescription = snapshotProduct.child("description").val();
 	var productType = snapshotProduct.child('type').val();
 	var productImage = snapshotProduct.child('image').val();
@@ -102,7 +129,6 @@ function prepareMessage(snapshotProduct){
 }
 
 function prepareResponse(elements, source){
-	console.log("TO TENTANDO FAZER MERDA LA");
 	let message = {
 		"fulfillmentMessages": [{
 			"payload": {
