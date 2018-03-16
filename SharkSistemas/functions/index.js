@@ -44,25 +44,19 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 
     else if(action === 'searchCategory'){
     	let category = parameters.category;
-		let dataCategory = firebase.database().ref('stores/'+store+'/categories/'+category);
-		dataCategory.once("value").then(function(snapshot) {
-			var products = snapshot.val();
-			var promises = [];
-			products.forEach(function(productInCategory){
-				let data = firebase.database().ref('stores/'+store+'/products/'+productInCategory);
-				data.once("value", function(snapshotProduct) {
-					elements.push(prepareMessage(snapshotProduct));
-				});
-				console.log(JSON.stringify(promises));		
+		let data = firebase.database().ref('stores/'+store+'/products');
+		data.orderByChild('categories/'+category).equalTo(true).once("value").then(function(snapshot) {
+			snapshot.forEach(function(snapshotProduct){
+				elements.push(prepareMessage(snapshotProduct));
 			});
-			console.log(JSON.stringify(promises));		
-			let responseJson = prepareResponse(promises, source);  
+			
+			let responseJson = prepareResponse(elements, source);  
 			res.json(responseJson);
 			return null;
-		}).catch(error => {
-			console.error(error);
-			res.error(500);
-		});			
+			}).catch(error => {
+				console.error(error);
+				res.error(500);
+			});				
     }                      
 		
 });
@@ -83,7 +77,6 @@ function prepareMessage(snapshotProduct){
 		Object.keys(productValues).forEach(function(key){
 			productValue += key+'- R$'+productValues[key]+'\n'; 
 		});
-		productValue -='\n';
 	}
 	var productPreview = {
     	"title":productName,
@@ -93,6 +86,11 @@ function prepareMessage(snapshotProduct){
      		"type":"postback",
         	"title":"Comprar",
         	"payload":"postback buy "+ productName
+        },
+        {
+        	"type":"postback",
+        	"title":"Detalhes",
+        	"payload":"postback details "+ productName
         }]
     };
 
