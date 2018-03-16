@@ -17,8 +17,9 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 		let data = firebase.database().ref('stores/'+store+'/products/'+product);
 		data.once("value").then(function(snapshot) {
 			elements.push(prepareMessage(snapshot));
-			let responseJson = prepareResponse(elements, source);  
-		   	res.json(responseJson);      	
+			let responseJson = prepareResponse(elements, source);
+			console.log(JSON.strigify(snapshot));
+		   	res.json(responseJson);     	
         	return null;
 		}).catch(error => {
 			//console.error(error);
@@ -64,7 +65,8 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 
 
 function prepareMessage(snapshotProduct){
-	console.log("TO TENTANDO FAZER MERDA AQUI");
+	console.log("TO TENTANDO FAZER MERDA AQUI123");
+	console.log("APARECE: " + JSON.stringify(snapshotProduct));
 	var productDescription = snapshotProduct.child("description").val();
 	var productType = snapshotProduct.child('type').val();
 	var productImage = snapshotProduct.child('image').val();
@@ -130,6 +132,6 @@ function prepareResponse(elements, source){
 
 function prepareError(){
 	let responseJson = {};
-	responseJson = {fulfillmentText: "Não entendi :("};
+	responseJson = {fulfillmentText: "Ocorreu um erro no servidor :(. \nTente novamente."};
 	return responseJson;
 }
