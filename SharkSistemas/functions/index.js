@@ -64,27 +64,35 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 		let data = firebase.database().ref('stores/'+store+'/products/'+product);
 		data.once("value").then(function(snapshot) {
         	if(snapshot.child("valueType").val() === "complex" ){
-        		var vetorzon = [];
+        		let vetorzon = [];
         		snapshot.child("values").forEach(function(snapshotSize){
-        			var vetorzin = [];
+        			//console.log(JSON.stringify(snapshotSize.key));
+        			var vectorzin = [];
         			var messageVec= null;
+
         			snapshotSize.forEach(function(SizeValues){
         				if(SizeValues.key === "message"){
-        					console.log(SizeValues.val());
+        					//console.log(SizeValues.val());
         					messageVec = SizeValues.val();
         				}else{
-        					vectorzin.push(SizeValues.val());
+        					var options = {
+        						"option": SizeValues.key
+        					};
+        					vectorzin.push(options);
         				}
         			});
-        			var jsonAnswer={"message":messageVec,
-        							"choices":vectorzin};
-        			vetorzon.push(jsonAnswer);
+        			var choices = {
+        				"choice": snapshot.key,
+        				"message": messageVec,
+        				"options": vectorzin
+        			};
+        			vetorzon.push(choices);
         		});
-        		console.log(JSON.strigify(vetorzon));
+        	console.log(JSON.stringify(vetorzon));
         	}
         	return null;
 		}).catch(error => {
-			//console.error(error);
+			console.log(error);
 			let responseJson = prepareError();
 			res.json(responseJson);
 		});
