@@ -1,5 +1,5 @@
 const functions = require('firebase-functions');
-
+const Compra = require ('ClasseCompra');
 const admin = require('firebase-admin');
 var firebase = admin.initializeApp(functions.config().firebase);
 
