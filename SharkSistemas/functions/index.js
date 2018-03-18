@@ -201,3 +201,28 @@ function prepareError(){
 	responseJson = {fulfillmentText: "Ocorreu um erro no servidor :(. \nTente novamente."};
 	return responseJson;
 }
+
+function newOrder(id, source, store){
+	let orderRef = firebase.database().ref('stores/'+store+'/orders');
+	let newOrder = orderRef.push();
+	newOrder.set({
+		"userId": id,
+		"products":[{}]
+	});
+}
+
+function retrieveUserData(id, source, store){
+	let data = firebase.database().ref('stores/'+store+'/clients/'+id);
+	data.once('value').then(function(snapshot){
+		if(snapshot.exists()){
+
+		}
+		else{
+			let clientRef = firebase.database().ref('stores/'+store+'/clients');
+			let newClient = clientRef.push();
+			newClient.set({
+
+			});
+		}
+	});
+}
