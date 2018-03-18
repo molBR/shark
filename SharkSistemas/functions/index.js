@@ -21,7 +21,7 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 		   	res.json(responseJson);     	
         	return null;
 		}).catch(error => {
-			//console.error(error);
+			console.error(error);
 			let responseJson = prepareError();
 			res.json(responseJson);
 		});	
@@ -39,6 +39,7 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 			return null;
 		}).catch(error => {
 			console.error(error);
+			let responseJson = prepareError();
 			res.error(500);
 		});
     }
@@ -56,6 +57,7 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 			return null;
 			}).catch(error => {
 				console.error(error);
+				let responseJson = prepareError();
 				res.error(500);
 			});				
     }       
@@ -76,34 +78,17 @@ exports.alimentos = functions.https.onRequest((req, res) => {
         					//console.log(SizeValues.val());
         					messageVec = SizeValues.val();
         				}else{
-        					var options = {
-        						"content_type":"text",
-						        "title":SizeValues.key,
-						        "payload":"okFunfando",
-						        
-
-        					};
+							options = prepareOpt(SizeValues.key,SizeValues.val());
         					vetorzin.push(options);
         				}
         			});
-        			var choices = {
-        				"text": messageVec,
-    					"quick_replies":vetorzin
-    				}
+        			var choices = prepareChoice(messageVec,vetorzin);
 
         			vetorzon.push(choices);
         		});
         		console.log(JSON.stringify(vetorzon));
-        		message = {
-					"fulfillmentMessages": [{
-						"payload": {
-							"facebook": vetorzon[1]
-						}
-					}]
-				};
-
+        		message = prepareQRMsg(vetorzon[1])
         	}
-
         	res.json(message);
         	return null;
 		}).catch(error => {
@@ -114,6 +99,38 @@ exports.alimentos = functions.https.onRequest((req, res) => {
    	}               
 		
 });
+
+function prepareQRMsg(snapshotVec)
+{
+	var	message = {
+		"fulfillmentMessages": [{
+			"payload": {
+				"facebook": snapshotVec
+			}
+		}]
+	};
+	return message;
+
+}
+
+function prepareChoice(snapshotText, snapshotQR){
+
+	var choices = {
+		"text": snapshotText,
+		"quick_replies":snapshotQR
+	};
+	return choices;
+
+}
+
+function prepareOpt(snapshotResponse1,snapshotResponse2){
+	var options = {
+		"content_type":"text",
+	    "title":snapshotResponse1 + ": 	R$" + snapshotResponse2,
+	    "payload":"okFunfando"					        
+	};
+	return options;
+}
 
 
 function prepareMessage(snapshotProduct){
