@@ -61,13 +61,14 @@ exports.alimentos = functions.https.onRequest((req, res) => {
     }       
    	else if (action === 'buy'){
    		let product = parameters.produto;
+   		var message
 		let data = firebase.database().ref('stores/'+store+'/products/'+product);
 		data.once("value").then(function(snapshot) {
         	if(snapshot.child("valueType").val() === "complex" ){
         		let vetorzon = [];
         		snapshot.child("values").forEach(function(snapshotSize){
         			//console.log(JSON.stringify(snapshotSize.key));
-        			var vectorzin = [];
+        			var vetorzin = [];
         			var messageVec= null;
 
         			snapshotSize.forEach(function(SizeValues){
@@ -76,20 +77,34 @@ exports.alimentos = functions.https.onRequest((req, res) => {
         					messageVec = SizeValues.val();
         				}else{
         					var options = {
-        						"option": SizeValues.key
+        						"content_type":"text",
+						        "title":SizeValues.key,
+						        "payload":"okFunfando",
+						        
+
         					};
-        					vectorzin.push(options);
+        					vetorzin.push(options);
         				}
         			});
         			var choices = {
-        				"choice": snapshot.key,
-        				"message": messageVec,
-        				"options": vectorzin
-        			};
+        				"text": messageVec,
+    					"quick_replies":vetorzin
+    				}
+
         			vetorzon.push(choices);
         		});
-        	console.log(JSON.stringify(vetorzon));
+        		console.log(JSON.stringify(vetorzon));
+        		message = {
+					"fulfillmentMessages": [{
+						"payload": {
+							"facebook": vetorzon[1]
+						}
+					}]
+				};
+
         	}
+
+        	res.json(message);
         	return null;
 		}).catch(error => {
 			console.log(error);
