@@ -1,4 +1,4 @@
-class orderClass{
+/*class orderClass{
 	constructor(client,ordered){
 		this.client = client;
 		var Prod = [];
@@ -11,3 +11,4 @@ class orderClass{
 
 
 }
+*/
