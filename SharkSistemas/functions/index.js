@@ -12,9 +12,10 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 	let elements = [];
 	let dataRef = firebase.database().ref('stores/'+store);
 	let re = new RegExp('/sessions/(.*)');
-	let userId = req.body.session.match(re);
-	console.log(userId);
-	retrieveUserData(userId, store, res);
+	let userId =  re.exec(req.body.session);
+	console.log(re);
+	console.log(userId[1]);
+	retrieveUserData(userId[1], store, res);
 
 	if(action === 'searchProduct'){
 		let product = parameters.produto;
@@ -228,7 +229,7 @@ function retrieveUserData(userId, store, res){
 		else{
 			let clientRef = firebase.database().ref('stores/'+store+'/clients');
 			clientRef.set({
-				userId:{
+				[userId]:{
 					"name":"Indeterminado"
 				}
 			});
@@ -237,6 +238,6 @@ function retrieveUserData(userId, store, res){
 	}).catch(error => {
 		console.error(error);
 		let responseJson = prepareError();
-		res.error(500);
+		res.json(responseJson);
 	});				
 }
