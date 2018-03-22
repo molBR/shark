@@ -1,6 +1,9 @@
 class Produto {
-	constructor(prod,quantity){
-		this.prod = prod;
+	constructor(product, quantity){
+		this.product = product;
+		this.quantity = quantity;
 	}
 
 }
+
+module.exports = Produto;

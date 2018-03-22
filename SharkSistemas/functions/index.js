@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 //const Compra = require ('ClasseCompra');
+const Produto = require('./produtoClass.js');
 const admin = require('firebase-admin');
 var firebase = admin.initializeApp(functions.config().firebase);
 
@@ -12,9 +13,8 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 	let elements = [];
 	let dataRef = firebase.database().ref('stores/'+store);
 	let re = new RegExp('/sessions/(.*)');
-	let session = req.body.session;
-	let userId =  re.exec(session);
-	retrieveUserData(userId[1], store, res);
+	let userId =  re.exec(req.body.session)[1];
+	retrieveUserData(userId, store, res);
 
 	if(action === 'searchProduct'){
 		let product = parameters.produto;
@@ -88,7 +88,7 @@ exports.alimentos = functions.https.onRequest((req, res) => {
     			}
     			choice = prepareChoice(queryMessage, choicesPreview);
     		});
-    		let responseJson = prepareQRMsg(choice,choiceType, session);
+    		let responseJson = prepareQRMsg(choice,choiceType);
     		res.json(responseJson);
     		return null
     	}).catch(error => {
@@ -101,9 +101,12 @@ exports.alimentos = functions.https.onRequest((req, res) => {
     else if(action === 'buySimple'){
     	console.log("compra simples");
 		let product = parameters.produto;
-
-		console.log("PRODUTO" + parameters);
-    	newProduct(firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp'), product);
+		let quantity = parameters.quantity;
+		console.log("PRODUTO" + JSON.stringify(parameters));
+		console.log("User Id: " + userId);
+    	prod = new Produto(product,quantity);
+    	console.log(prod);
+    	insertProduto(store,userId,prod);
 
     }
 
@@ -113,9 +116,30 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 		
 });
 
+function insertProduto(store,userId,produto){
+	let data = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
+	data.once("value").then(function (snapshot)
+	{
+		if(snapshot.exists()){
+			console.log("existe");
+		}else{
+			let datanew = data.push();
+			datanew.set({
+				produto,
+				"hora" : firebase.database.ServerValue.TIMESTAMP
+			});
+		}
+		return null;
+	}).catch(error => {
+			console.error(error);
+			let responseJson = prepareError();
+			res.JSON(responseJson);
+		});	
+}
 
 
-function prepareQRMsg(snapshotVec,choiceType,session)
+
+function prepareQRMsg(snapshotVec,choiceType)
 {
 	console.log("Choice type" + choiceType);
 	var	message = {
@@ -127,9 +151,17 @@ function prepareQRMsg(snapshotVec,choiceType,session)
 			"name" : choiceType,
 			"languageCode" : "pt-BR",
 			"parameters":{
+				"msg" : snapshotVec
+			}
+		},
+		"outputContexts": [
+		{
+			"name" : "choiceLemonContext",
+			"lifespanCount" : 2,
+			"parameters":{
 				"msg" : "vai corinthians"
 			}
-		}
+		}]
 	};
 	return message;
 
@@ -268,11 +300,9 @@ function retrieveUserData(userId, store, res){
 			let client;
 		}
 		else{
-			let clientRef = firebase.database().ref('stores/'+store+'/clients');
+			let clientRef = firebase.database().ref('stores/'+store+'/clients/'+userId);
 			clientRef.set({
-				[userId]:{
-					"name":"Indeterminado"
-				}
+				"nome" : "indeterminado" 
 			});
 		}
 		return null;
