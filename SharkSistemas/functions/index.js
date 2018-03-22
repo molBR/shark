@@ -100,7 +100,8 @@ exports.alimentos = functions.https.onRequest((req, res) => {
     else if(action === 'buySimple'){
     	console.log("compra simples");
 		let product = parameters.produto;
-		console.log("PRODUTO" + parameters.produto);
+
+		console.log("PRODUTO" + parameters);
     	newProduct(firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp'), product);
 
     }
@@ -120,8 +121,7 @@ function prepareQRMsg(snapshotVec,choiceType)
 		"fulfillmentMessages": [{
 			"payload": {
 				"facebook": snapshotVec
-			}
-		}],
+			}		}],
 		"followupEventInput": {
 			"name" : choiceType,
 			"languageCode" : "pt-BR",
