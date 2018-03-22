@@ -12,7 +12,8 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 	let elements = [];
 	let dataRef = firebase.database().ref('stores/'+store);
 	let re = new RegExp('/sessions/(.*)');
-	let userId =  re.exec(req.body.session);
+	let session = req.body.session;
+	let userId =  re.exec(session);
 	retrieveUserData(userId[1], store, res);
 
 	if(action === 'searchProduct'){
@@ -87,7 +88,7 @@ exports.alimentos = functions.https.onRequest((req, res) => {
     			}
     			choice = prepareChoice(queryMessage, choicesPreview);
     		});
-    		let responseJson = prepareQRMsg(choice,choiceType);
+    		let responseJson = prepareQRMsg(choice,choiceType, session);
     		res.json(responseJson);
     		return null
     	}).catch(error => {
@@ -114,7 +115,7 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 
 
 
-function prepareQRMsg(snapshotVec,choiceType)
+function prepareQRMsg(snapshotVec,choiceType,session)
 {
 	console.log("Choice type" + choiceType);
 	var	message = {
@@ -128,15 +129,7 @@ function prepareQRMsg(snapshotVec,choiceType)
 			"parameters":{
 				"msg" : "vai corinthians"
 			}
-		},
-		"outputContexts": [
-		{
-			"name" : "choiceLemonContext",
-			"lifespanCount" : 2,
-			"parameters":{
-				"msg" : "vai corinthians"
-			}
-		}]
+		}
 	};
 	return message;
 
