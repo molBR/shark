@@ -13,8 +13,6 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 	let dataRef = firebase.database().ref('stores/'+store);
 	let re = new RegExp('/sessions/(.*)');
 	let userId =  re.exec(req.body.session);
-	console.log(re);
-	console.log(userId[1]);
 	retrieveUserData(userId[1], store, res);
 
 	if(action === 'searchProduct'){
@@ -71,21 +69,34 @@ exports.alimentos = functions.https.onRequest((req, res) => {
     else if(action === 'buyComplex'){
     	let product = parameters.produto;
     	let data = firebase.database().ref('stores/'+store+'/products/'+product);
+    	let choice;
     	data.once('value').then(function(snapshot){
     		let choiceType = snapshot.child('choiceType').val();
     		snapshot.child('values').forEach(function(snapshotChoice){
-    			let choices;
-    			if(snapshotChoice.child('index') === 0){
-    				snapshot.child('options').forEach(function(snapshotOption){
-    					snapshotOption.val().forEach()
+    			let queryMessage;
+    			let choicePreview;
+    			if(snapshotChoice.child('index').val() === 0){
+    				queryMessage = snapshotChoice.child('message').val();
+    				snapshotChoice.child('options').forEach(function(snapshotOptionIndex){
+    					snapshotOptionIndex.forEach(function(snapshotOption){
+    						let options = prepareOpt(snapshotOption.key, snapshotOption.val());
+    						choicesPreview.push(options);
+    					});
     				});
-    				let options = prepareOpt(snapshot.)
     			}
+    			choice = prepareChoice(queryMessage, choicesPreview);
     		});
-    	});
+    		let responseJson = prepareQRMsg(choice);
+    		res.json(responseJson);
+    		return null
+    	}).catch(error => {
+			console.error(error);
+			let responseJson = prepareError();
+			res.JSON(responseJson);
+		});	
     }
 
-    else if(action === 'buySimplex'){
+    else if(action === 'buySimple'){
 		let product = parameters.produto;
     	newProduct(firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp'), product);
     }
@@ -144,7 +155,7 @@ function prepareMessage(snapshotProduct, store){
 		buyButton = {
 			"type":"postback",
         	"title":"COMPRAR",
-        	"payload":"postback buy "+ productName
+        	"payload":"postback buySimple "+ productName
 		};
 	}
 	else{
@@ -153,12 +164,10 @@ function prepareMessage(snapshotProduct, store){
 				choice.child('options').forEach(function(options){
 					options.forEach(function(separateOptions){
 						productValue += separateOptions.key+'- R$'+separateOptions.val()+'\n';
-						buyButton = {
- 							"type":"web_url",
-							"url":"https://bestfood.bubbleapps.io/version-test/webviewbot?store="+store+"&product="+productName,
-							"title":"COMPRAR",
-							"webview_height_ratio": "compact",
-							"messenger_extensions": "true"
+						buyButton = buyButton = {
+							"type":"postback",
+				        	"title":"COMPRAR",
+				        	"payload":"postback buyComplex "+ productName
 						}; 
 					});
 				});
