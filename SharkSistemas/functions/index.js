@@ -68,7 +68,24 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 			});				
     }
 
-    else if(action === 'buy'){
+    else if(action === 'buyComplex'){
+    	let product = parameters.produto;
+    	let data = firebase.database().ref('stores/'+store+'/products/'+product);
+    	data.once('value').then(function(snapshot){
+    		let choiceType = snapshot.child('choiceType').val();
+    		snapshot.child('values').forEach(function(snapshotChoice){
+    			let choices;
+    			if(snapshotChoice.child('index') === 0){
+    				snapshot.child('options').forEach(function(snapshotOption){
+    					snapshotOption.val().forEach()
+    				});
+    				let options = prepareOpt(snapshot.)
+    			}
+    		});
+    	});
+    }
+
+    else if(action === 'buySimplex'){
 		let product = parameters.produto;
     	newProduct(firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp'), product);
     }
@@ -78,6 +95,8 @@ exports.alimentos = functions.https.onRequest((req, res) => {
     }                      
 		
 });
+
+
 
 function prepareQRMsg(snapshotVec)
 {
