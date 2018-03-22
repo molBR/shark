@@ -67,6 +67,7 @@ exports.alimentos = functions.https.onRequest((req, res) => {
     }
 
     else if(action === 'buyComplex'){
+    	console.log("complexa");
     	let product = parameters.produto;
     	let data = firebase.database().ref('stores/'+store+'/products/'+product);
     	let choice;
@@ -74,7 +75,7 @@ exports.alimentos = functions.https.onRequest((req, res) => {
     		let choiceType = snapshot.child('choiceType').val();
     		snapshot.child('values').forEach(function(snapshotChoice){
     			let queryMessage;
-    			let choicePreview;
+    			let choicesPreview = [];
     			if(snapshotChoice.child('index').val() === 0){
     				queryMessage = snapshotChoice.child('message').val();
     				snapshotChoice.child('options').forEach(function(snapshotOptionIndex){
@@ -86,7 +87,7 @@ exports.alimentos = functions.https.onRequest((req, res) => {
     			}
     			choice = prepareChoice(queryMessage, choicesPreview);
     		});
-    		let responseJson = prepareQRMsg(choice);
+    		let responseJson = prepareQRMsg(choice,choiceType);
     		res.json(responseJson);
     		return null
     	}).catch(error => {
@@ -97,8 +98,11 @@ exports.alimentos = functions.https.onRequest((req, res) => {
     }
 
     else if(action === 'buySimple'){
+    	console.log("compra simples");
 		let product = parameters.produto;
+		console.log("PRODUTO" + parameters.produto);
     	newProduct(firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp'), product);
+
     }
 
     else if(action === 'finalizarCompra'){
@@ -109,12 +113,28 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 
 
 
-function prepareQRMsg(snapshotVec)
+function prepareQRMsg(snapshotVec,choiceType)
 {
+	console.log("Choice type" + choiceType);
 	var	message = {
 		"fulfillmentMessages": [{
 			"payload": {
 				"facebook": snapshotVec
+			}
+		}],
+		"followupEventInput": {
+			"name" : choiceType,
+			"languageCode" : "pt-BR",
+			"parameters":{
+				"msg" : "vai corinthians"
+			}
+		},
+		"outputContexts": [
+		{
+			"name" : "choiceLemonContext",
+			"lifespanCount" : 2,
+			"parameters":{
+				"msg" : "vai corinthians"
 			}
 		}]
 	};
@@ -148,7 +168,7 @@ function prepareMessage(snapshotProduct, store){
 	let productImage = snapshotProduct.child('image').val();
 	let productName = snapshotProduct.key;
 	let productValueType = snapshotProduct.child('valueType').val();
-	let productValue;
+	let productValue = "";
 	let buyButton;
 	if(productValueType === 'simple'){
 		productValue = 'R$ '+snapshotProduct.child('value').val(); 
@@ -174,7 +194,7 @@ function prepareMessage(snapshotProduct, store){
 			}
 		});
 	}
-
+	console.log("PRODUCT VALUE " + productValue);
 	var productPreview = {
     	"title":productName,
        	"image_url":productImage,
