@@ -141,27 +141,12 @@ function insertProduto(store,userId,produto){
 
 function prepareQRMsg(snapshotVec,choiceType)
 {
-	console.log("Choice type" + choiceType);
+	console.log(JSON.stringify(snapshotVec));
 	var	message = {
-		"fulfillmentMessages": [{
-			"payload": {
-				"facebook": snapshotVec
-			}		}],
 		"followupEventInput": {
 			"name" : choiceType,
-			"languageCode" : "pt-BR",
-			"parameters":{
-				"msg" : snapshotVec
-			}
-		},
-		"outputContexts": [
-		{
-			"name" : "choiceLemonContext",
-			"lifespanCount" : 2,
-			"parameters":{
-				"msg" : "vai corinthians"
-			}
-		}]
+			"languageCode" : "pt-BR"
+		}
 	};
 	return message;
 
