@@ -1,14 +1,7 @@
-/*class orderClass{
-	constructor(client,ordered){
+class orderClass{
+	constructor(client,produtos,hora){
 		this.client = client;
-		var Prod = [];
-		this.valorTotal = 0;
-		this.metodoPag;
-		this.ordered =
+		this.produtos = produtos;
 	}
-
-
-
-
 }
-*/
+module.exports = orderClass
