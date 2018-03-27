@@ -103,12 +103,14 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 		let more = parameters.more;
 		let value = parameters.value;
     	prod = new Produto(product,quantity,value);
-    	insertProduto(store,userId,prod,res);
-    	if(more==="não"){
-    		insertOrder(store,userId,res);
-    	}
-    	res.JSON(prepareError());
-    }
+    	insertProduto(store,userId,prod,res,function(){ //Sincronia cabulosa.
+	    	if(more==="não"){
+	    		insertOrder(store,userId,res);
+	    	}
+    	});
+		let responseJson = prepareError();
+		res.JSON(responseJson);
+	}
 
     else if(action === 'finalizarCompra'){
     	newOrder(firebase.database().ref('stores/'+store+'/orders/'+firebase.database.ServerValue.TIMESTAMP), firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp'));
@@ -117,15 +119,20 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 });
 
 function insertOrder(store,userId,res){
-	let dataInsert = firebase.database().ref('stores/'+store+'/clientes/'+userId+'/orderTemp'+'/produtos');
-	let dataReceive = firebase.database().ref('stores/'+store+'/orders');
+	let dataInsert = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
+	let dataReceive = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orders');
 
 	dataInsert.once("value").then(function(snapshot){
-		let Order = new orderClass(snapshot,userId,Date.now());
+		console.log(userId);
+		console.log(snapshot);
+		let Order = new orderClass(JSON.stringify(snapshot.child('produtos')),userId,Date.now());
+		Order = JSON.stringify(Order);
+		console.log(Order);
 		let dataRecieveNew = dataReceive.push();
 		dataRecieveNew.set({
 			Order
 		});
+		dataInsert.remove();	
 		return null;
 	}).catch(error => {
 			console.error(error);
@@ -134,7 +141,8 @@ function insertOrder(store,userId,res){
 		});	
 }
 
-function insertProduto(store,userId,produto,value,res){
+function insertProduto(store,userId,produto,res,callback){
+	console.log("USER ID: " + userId);
 	let data = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
 	let data1 = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos');
 	data.once("value").then(function (snapshot)
@@ -156,7 +164,8 @@ function insertProduto(store,userId,produto,value,res){
 				produto
 			});
 		}
-		return data;
+		callback();
+		return null;
 
 	}).catch(error => {
 			console.error(error);
