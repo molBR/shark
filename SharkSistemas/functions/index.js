@@ -325,3 +325,52 @@ function retrieveUserData(userId, store, res){
 		res.json(responseJson);
 	});				
 }
+
+function cartMessage(order){
+
+  let productChoices = "";
+  let buttons;
+
+  Object.keys(order.choices).forEach(function(key){
+    productChoices += key+': '+order.choices[key]+'\n';
+  });
+  if(productValueType === 'simple'){
+    buttons = [
+    {
+          "type":"postback",
+          "title":"Mudar Quantidade",
+          "payload":"quatityChange "+order.name
+        },
+        {
+          "type":"postback",
+          "title":"Retirar do carrinho",
+          "payload":"deleteProduct "+order.name
+        }];
+  }
+  else{
+    buttons = [
+    {
+          "type":"postback",
+          "title":"Mudar Quantidade",
+          "payload":"quatityChange "+order.name
+        },
+        {
+          "type":"postback",
+          "title":"Mudar Opções",
+          "payload":"optionsChange "+order.name
+        },
+        {
+          "type":"postback",
+          "title":"Retirar do carrinho",
+          "payload":"deleteProduct "+order.name
+        }];
+  }
+  var productPreview = {
+      "title":order.name,
+        "image_url":order.image,
+      "subtitle":productChoices,
+        "buttons": buttons
+    };
+
+    return productPreview;
+}
