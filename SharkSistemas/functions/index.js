@@ -1,6 +1,7 @@
 const functions = require('firebase-functions');
 //const Compra = require ('ClasseCompra');
 const Produto = require('./produtoClass.js');
+const orderClass = require ('./orderClass.js');
 const admin = require('firebase-admin');
 var firebase = admin.initializeApp(functions.config().firebase);
 
@@ -12,9 +13,7 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 	let source = req.body.originalDetectIntentRequest.source;
 	let elements = [];
 	let dataRef = firebase.database().ref('stores/'+store);
-	let re = new RegExp('/sessions/(.*)');
-	let userId =  re.exec(req.body.session)[1];
-	retrieveUserData(userId, store, res);
+	let userId =  req.body.originalDetectIntentRequest.payload.sender.id;
 
 	if(action === 'searchProduct'){
 		let product = parameters.produto;
@@ -99,15 +98,16 @@ exports.alimentos = functions.https.onRequest((req, res) => {
     }
 
     else if(action === 'buySimple'){
-    	console.log("compra simples");
 		let product = parameters.produto;
 		let quantity = parameters.quantity;
-		console.log("PRODUTO" + JSON.stringify(parameters));
-		console.log("User Id: " + userId);
-    	prod = new Produto(product,quantity);
-    	console.log(prod);
-    	insertProduto(store,userId,prod);
-
+		let more = parameters.more;
+		let value = parameters.value;
+    	prod = new Produto(product,quantity,value);
+    	insertProduto(store,userId,prod,res);
+    	if(more==="não"){
+    		insertOrder(store,userId,res);
+    	}
+    	res.JSON(prepareError());
     }
 
     else if(action === 'finalizarCompra'){
@@ -116,20 +116,48 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 		
 });
 
-function insertProduto(store,userId,produto){
+function insertOrder(store,userId,res){
+	let dataInsert = firebase.database().ref('stores/'+store+'/clientes/'+userId+'/orderTemp'+'/produtos');
+	let dataReceive = firebase.database().ref('stores/'+store+'/orders');
+
+	dataInsert.once("value").then(function(snapshot){
+		let Order = new orderClass(snapshot,userId,Date.now());
+		let dataRecieveNew = dataReceive.push();
+		dataRecieveNew.set({
+			Order
+		});
+		return null;
+	}).catch(error => {
+			console.error(error);
+			let responseJson = prepareError();
+			res.JSON(responseJson);
+		});	
+}
+
+function insertProduto(store,userId,produto,value,res){
 	let data = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
+	let data1 = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos');
 	data.once("value").then(function (snapshot)
 	{
-		if(snapshot.exists()){
-			console.log("existe");
-		}else{
-			let datanew = data.push();
+		let tempProd = snapshot.child("hora").val()
+		let agora = Date.now()
+		let diferenca = agora - tempProd;
+		if(!snapshot.exists() || (snapshot.exists()&&diferenca>=1800000)){
+			data.set({
+				"hora" : Date.now()
+			});
+			let datanew = data1.push();
 			datanew.set({
-				produto,
-				"hora" : firebase.database.ServerValue.TIMESTAMP
+				produto
+			});
+		}else{
+			let datanew = data1.push();
+			datanew.set({
+				produto
 			});
 		}
-		return null;
+		return data;
+
 	}).catch(error => {
 			console.error(error);
 			let responseJson = prepareError();
@@ -185,7 +213,7 @@ function prepareMessage(snapshotProduct, store){
 		buyButton = {
 			"type":"postback",
         	"title":"COMPRAR",
-        	"payload":"postback buySimple "+ productName
+        	"payload":"postback buySimple "+ productName + " " + snapshotProduct.child('value').val()
 		};
 	}
 	else{
