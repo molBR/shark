@@ -1,27 +1,26 @@
-const functions = require('firebase-functions');
+const functions = require('firebase-functions'); //funcoes da api firebase
 //const Compra = require ('ClasseCompra');
-const Produto = require('./produtoClass.js');
-const orderClass = require ('./orderClass.js');
-const admin = require('firebase-admin');
-var firebase = admin.initializeApp(functions.config().firebase);
+const Produto = require('./produtoClass.js'); //classe de cadastro de produto
+const orderClass = require ('./orderClass.js'); //classe de cadastro de ordem
+const admin = require('firebase-admin'); //autenticacao firebase
+var firebase = admin.initializeApp(functions.config().firebase); //objeto para interacao com o firebase 
 
-exports.alimentos = functions.https.onRequest((req, res) => {
+exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que surgir um http request...
 	
-	let action = req.body.queryResult.action;
-	let parameters = req.body.queryResult.parameters;
-	let store = req.headers.store;
-	let source = req.body.originalDetectIntentRequest.source;
-	let elements = [];
-	let dataRef = firebase.database().ref('stores/'+store);
-	let userId =  req.body.originalDetectIntentRequest.payload.sender.id;
+	let action = req.body.queryResult.action; //intenção do usuário ao interagir com o firebase
+	let parameters = req.body.queryResult.parameters; //parametros do pedido do usuario
+	let store = req.headers.store; //loja em que o cliente está pedindo
+	let source = req.body.originalDetectIntentRequest.source; //qual rede social que o pedido vem
+	let elements = []; //elementos dos produtos 
+	let dataRef = firebase.database().ref('stores/'+store); //não sei pra que serve mas to com medo de tirar..
+	let userId =  req.body.originalDetectIntentRequest.payload.sender.id; //Id do cliente que esta pedindo
 
-	if(action === 'searchProduct'){
+	if(action === 'searchProduct'){ //procura o produto no banco de dados
 		let product = parameters.produto;
-		let data = firebase.database().ref('stores/'+store+'/products/'+product);
+		let data = firebase.database().ref('stores/'+store+'/products/'+product); 
 		data.once("value").then(function(snapshot) {
-			elements.push(prepareMessage(snapshot));
-			let responseJson = prepareResponse(elements, source);
-			console.log(JSON.stringify(snapshot));
+			elements.push(prepareMessage(snapshot)); 
+			let responseJson = prepareResponse(elements, source); 
 		   	res.json(responseJson);     	
         	return null;
 		}).catch(error => {
@@ -44,7 +43,7 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 		}).catch(error => {
 			console.error(error);
 			let responseJson = prepareError();
-			res.error(500);
+			res.json(responseJson);
 		});
     }
 
@@ -62,12 +61,11 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 			}).catch(error => {
 				console.error(error);
 				let responseJson = prepareError();
-				res.error(500);
+				res.json(responseJson);
 			});				
     }
 
     else if(action === 'buyComplex'){
-    	console.log("complexa");
     	let product = parameters.produto;
     	let data = firebase.database().ref('stores/'+store+'/products/'+product);
     	let choice;
@@ -102,7 +100,12 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 		let quantity = parameters.quantity;
 		let more = parameters.more;
 		let value = parameters.value;
-    	prod = new Produto(product,quantity,value);
+    	//prod = new Produto(product,quantity,value);
+    	prod = {
+    		"name" : product,
+    		"quantity" : quantity,
+    		"value" : value
+    	};
     	insertProduto(store,userId,prod,res,function(){ //Sincronia cabulosa.
 	    	if(more==="não"){
 	    		insertOrder(store,userId,res);
@@ -119,21 +122,39 @@ exports.alimentos = functions.https.onRequest((req, res) => {
 });
 
 function insertOrder(store,userId,res){
-	let dataInsert = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
+	let dataInsert = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos');
 	let dataReceive = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orders');
+	let dataRemove = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp')
+	let time = Date.now();
+		dataInsert.once("value").then(function(snapshot){
+			let vetorProd = [];
+			snapshot.forEach(function(snapProd){
+			let Order = new orderClass(JSON.stringify(snapshot.child('produtos')),userId,Date.now());
+			let prodi = snapProd.child('produto').val();
+			let prodiName = prodi.name;
+			let prodiQuant = prodi.quantity
+			let prodiValue = prodi.value;
+			Order = JSON.stringify(Order);
+			let prod = {
+				"name": prodiName,
+				"quantity" : prodiQuant,
+				"value" : prodiValue};
+			vetorProd.push(prod);
+			
+			
 
-	dataInsert.once("value").then(function(snapshot){
-		console.log(userId);
-		console.log(snapshot);
-		let Order = new orderClass(JSON.stringify(snapshot.child('produtos')),userId,Date.now());
-		Order = JSON.stringify(Order);
-		console.log(Order);
+	});
 		let dataRecieveNew = dataReceive.push();
 		dataRecieveNew.set({
-			Order
-		});
-		dataInsert.remove();	
+				"Usuario " : userId,
+				"Produto" : {
+					produtos : vetorProd
+				},
+				"Tempo" : time
+			});
+		dataRemove.remove();	
 		return null;
+		
 	}).catch(error => {
 			console.error(error);
 			let responseJson = prepareError();
@@ -142,7 +163,6 @@ function insertOrder(store,userId,res){
 }
 
 function insertProduto(store,userId,produto,res,callback){
-	console.log("USER ID: " + userId);
 	let data = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
 	let data1 = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos');
 	data.once("value").then(function (snapshot)
@@ -178,7 +198,6 @@ function insertProduto(store,userId,produto,res,callback){
 
 function prepareQRMsg(snapshotVec,choiceType)
 {
-	console.log(JSON.stringify(snapshotVec));
 	var	message = {
 		"followupEventInput": {
 			"name" : choiceType,
@@ -241,7 +260,6 @@ function prepareMessage(snapshotProduct, store){
 			}
 		});
 	}
-	console.log("PRODUCT VALUE " + productValue);
 	var productPreview = {
     	"title":productName,
        	"image_url":productImage,
@@ -302,7 +320,7 @@ function newOrder(orderRef, orderTemp, res){
 	}).catch(error => {
 		console.error(error);
 		let responseJson = prepareError();
-		res.error(500);
+		res.json(responseJson);
 	});				
 	
 }
