@@ -91,7 +91,7 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
     	}).catch(error => {
 			console.error(error);
 			let responseJson = prepareError();
-			res.JSON(responseJson);
+			res.json(responseJson);
 		});	
     }
 
@@ -108,11 +108,15 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
     	};
     	insertProduto(store,userId,prod,res,function(){ //Sincronia cabulosa.
 	    	if(more==="não"){
-	    		insertOrder(store,userId,res);
+
+	    		response = insertOrder(store,userId,res);
+	    		responseJson = {fulfillmentText: JSON.stringify(response)};
+	    		res.json(responseJson);
 	    	}
     	});
-		let responseJson = prepareError();
-		res.JSON(responseJson);
+		//let responseJson = prepareError();
+		responseJson = {fulfillmentText: "Por favor, peça o próximo pedido"};
+		res.json(responseJson);
 	}
 
     else if(action === 'finalizarCompra'){
@@ -140,8 +144,6 @@ function insertOrder(store,userId,res){
 				"quantity" : prodiQuant,
 				"value" : prodiValue};
 			vetorProd.push(prod);
-			
-			
 
 	});
 		let dataRecieveNew = dataReceive.push();
@@ -152,13 +154,13 @@ function insertOrder(store,userId,res){
 				},
 				"Tempo" : time
 			});
-		dataRemove.remove();	
-		return null;
+		dataRemove.remove();
+		return vetorProd;
 		
 	}).catch(error => {
 			console.error(error);
 			let responseJson = prepareError();
-			res.JSON(responseJson);
+			res.json(responseJson);
 		});	
 }
 
@@ -186,11 +188,10 @@ function insertProduto(store,userId,produto,res,callback){
 		}
 		callback();
 		return null;
-
 	}).catch(error => {
 			console.error(error);
 			let responseJson = prepareError();
-			res.JSON(responseJson);
+			res.json(responseJson);
 		});	
 }
 
