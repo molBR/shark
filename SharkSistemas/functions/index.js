@@ -100,6 +100,7 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 		let quantity = parameters.quantity;
 		let more = parameters.more;
 		let value = parameters.value;
+		let prodiVT = "simple";
     	//prod = new Produto(product,quantity,value);
     	prod = {
     		"name" : product,
@@ -108,15 +109,14 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
     	};
     	insertProduto(store,userId,prod,res,function(){ //Sincronia cabulosa.
 	    	if(more==="não"){
-
-	    		response = insertOrder(store,userId,res);
-	    		responseJson = {fulfillmentText: JSON.stringify(response)};
-	    		res.json(responseJson);
+	    		insertOrder(store,userId,res,prodiVT,source);
+	    	}else{
+	    		responseJson = {fulfillmentText: "Por favor, peça o próximo pedido"};
+				res.json(responseJson);
 	    	}
     	});
-		//let responseJson = prepareError();
-		responseJson = {fulfillmentText: "Por favor, peça o próximo pedido"};
-		res.json(responseJson);
+
+
 	}
 
     else if(action === 'finalizarCompra'){
@@ -125,13 +125,14 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 		
 });
 
-function insertOrder(store,userId,res){
+function insertOrder(store,userId,res,prodiVT,source){
 	let dataInsert = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos');
 	let dataReceive = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orders');
 	let dataRemove = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp')
 	let time = Date.now();
 		dataInsert.once("value").then(function(snapshot){
 			let vetorProd = [];
+			let vetorCar = [];
 			snapshot.forEach(function(snapProd){
 			let Order = new orderClass(JSON.stringify(snapshot.child('produtos')),userId,Date.now());
 			let prodi = snapProd.child('produto').val();
@@ -142,7 +143,8 @@ function insertOrder(store,userId,res){
 			let prod = {
 				"name": prodiName,
 				"quantity" : prodiQuant,
-				"value" : prodiValue};
+				"value" : prodiValue,
+				"productValueType" : prodiVT};
 			vetorProd.push(prod);
 
 	});
@@ -155,7 +157,18 @@ function insertOrder(store,userId,res){
 				"Tempo" : time
 			});
 		dataRemove.remove();
-		return vetorProd;
+		//responseJson = {fulfillmentText: JSON.stringify(vetorProd)};
+	    //res.json(responseJson);
+	    vetorProd.forEach(function(prodVet){
+	    	vetorCar.push(cartMessage(prodVet));
+	    });
+
+	    var PR = {};
+	    //PR.fufillmentText = "CARRINHO:"
+	    PR.fulfillmentMessages = prepareResponseCart(vetorCar,source).fulfillmentMessages;
+	    console.log(JSON.stringify(PR));
+	    res.json(PR);
+		return null;
 		
 	}).catch(error => {
 			console.error(error);
@@ -242,7 +255,7 @@ function prepareMessage(snapshotProduct, store){
 		buyButton = {
 			"type":"postback",
         	"title":"COMPRAR",
-        	"payload":"postback buySimple "+ productName + " " + snapshotProduct.child('value').val()
+        	"payload":"postback buySimple "+ productName + " " + snapshotProduct.child('value').val() + snapshotProduct.child('image').val()
 		};
 	}
 	else{
@@ -286,6 +299,36 @@ function prepareResponse(elements, source){
 					"attachment":{
     					"type":"template",
 	    				"payload":{
+    	   					"template_type":"generic",
+       						"elements":elements
+    					}
+    				}
+    			}
+			}
+		}]
+	};
+	let responseJson = {};
+	if (source === "facebook") {
+		responseJson.fulfillmentMessages = message.fulfillmentMessages;	
+    } 
+
+    else {
+    	responseJson = {fulfillmentText: message.fulfillmentText}; 
+    }
+
+    return responseJson;	   	
+}
+
+function prepareResponseCart(elements, source){
+	let message = {
+		"fulfillmentMessages": [{
+			"text" : ["CARRINHO: "],
+			"payload": {
+				"facebook":{
+					"attachment":{
+    					"type":"template",
+	    				"payload":{
+
     	   					"template_type":"generic",
        						"elements":elements
     					}
@@ -355,14 +398,11 @@ function retrieveUserData(userId, store, res){
 }
 
 function cartMessage(order){
-
+  console.log(order);
   let productChoices = "";
   let buttons;
 
-  Object.keys(order.choices).forEach(function(key){
-    productChoices += key+': '+order.choices[key]+'\n';
-  });
-  if(productValueType === 'simple'){
+  if(order.productValueType === 'simple'){
     buttons = [
     {
           "type":"postback",
@@ -376,6 +416,9 @@ function cartMessage(order){
         }];
   }
   else{
+	  Object.keys(order.choices).forEach(function(key){
+	    productChoices += key+': '+order.choices[key]+'\n';
+	  });
     buttons = [
     {
           "type":"postback",
