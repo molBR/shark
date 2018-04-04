@@ -322,7 +322,12 @@ function prepareResponse(elements, source){
 function prepareResponseCart(elements, source){
 	let message = {
 		"fulfillmentMessages": [{
-			"text" : ["CARRINHO: "],
+			"payload": {
+				"facebook":{
+					"text":"CARRINHO"
+    			}
+			}
+		},{
 			"payload": {
 				"facebook":{
 					"attachment":{
