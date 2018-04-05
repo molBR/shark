@@ -100,12 +100,14 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 		let quantity = parameters.quantity;
 		let more = parameters.more;
 		let value = parameters.value;
+		let link = parameters.link
 		let prodiVT = "simple";
     	//prod = new Produto(product,quantity,value);
     	prod = {
     		"name" : product,
     		"quantity" : quantity,
-    		"value" : value
+    		"value" : value,
+    		"link" : link
     	};
     	insertProduto(store,userId,prod,res,function(){ //Sincronia cabulosa.
 	    	if(more==="não"){
@@ -128,7 +130,7 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 function insertOrder(store,userId,res,prodiVT,source){
 	let dataInsert = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos');
 	let dataReceive = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orders');
-	let dataRemove = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp')
+	let dataRemove = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
 	let time = Date.now();
 		dataInsert.once("value").then(function(snapshot){
 			let vetorProd = [];
@@ -139,11 +141,13 @@ function insertOrder(store,userId,res,prodiVT,source){
 			let prodiName = prodi.name;
 			let prodiQuant = prodi.quantity
 			let prodiValue = prodi.value;
-			Order = JSON.stringify(Order);
+			let prodiLink = prodi.link; //<---      AQUI MARCAO 
+			console.log("prodiLink: " + prodiLink); 
 			let prod = {
 				"name": prodiName,
 				"quantity" : prodiQuant,
 				"value" : prodiValue,
+				"link" : prodiLink,
 				"productValueType" : prodiVT};
 			vetorProd.push(prod);
 
@@ -250,12 +254,15 @@ function prepareMessage(snapshotProduct, store){
 	let productValueType = snapshotProduct.child('valueType').val();
 	let productValue = "";
 	let buyButton;
+	
+	productLink = productImage.substring(46,productImage.length);
+	console.log("aqui: " + productLink);
 	if(productValueType === 'simple'){
 		productValue = 'R$ '+snapshotProduct.child('value').val(); 
 		buyButton = {
 			"type":"postback",
         	"title":"COMPRAR",
-        	"payload":"postback buySimple "+ productName + " " + snapshotProduct.child('value').val() + snapshotProduct.child('image').val()
+        	"payload":"postback buySimple "+ productName + " " + snapshotProduct.child('value').val() + " " + productLink
 		};
 	}
 	else{
@@ -324,7 +331,7 @@ function prepareResponseCart(elements, source){
 		"fulfillmentMessages": [{
 			"payload": {
 				"facebook":{
-					"text":"CARRINHO"
+					"text":"Confira o seu pedido: "
     			}
 			}
 		},{
