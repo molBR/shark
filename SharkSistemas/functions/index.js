@@ -12,7 +12,6 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 	let store = req.headers.store; //loja em que o cliente está pedindo
 	let source = req.body.originalDetectIntentRequest.source; //qual rede social que o pedido vem
 	let elements = []; //elementos dos produtos 
-	let dataRef = firebase.database().ref('stores/'+store); //não sei pra que serve mas to com medo de tirar..
 	let userId =  req.body.originalDetectIntentRequest.payload.sender.id; //Id do cliente que esta pedindo
 
 	if(action === 'searchProduct'){ //procura o produto no banco de dados
@@ -147,7 +146,7 @@ function insertOrder(store,userId,res,prodiVT,source){
 				"name": prodiName,
 				"quantity" : prodiQuant,
 				"value" : prodiValue,
-				"link" : prodiLink,
+				"image" : "http://res.cloudinary.com/uaihome/image/upload/"+prodiLink,
 				"productValueType" : prodiVT};
 			vetorProd.push(prod);
 
