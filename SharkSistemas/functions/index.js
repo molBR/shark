@@ -154,9 +154,7 @@ function insertOrder(store,userId,res,prodiVT,source){
 		let dataRecieveNew = dataReceive.push();
 		dataRecieveNew.set({
 				"Usuario " : userId,
-				"Produto" : {
-					produtos : vetorProd
-				},
+				"produtos" : vetorProd,
 				"Tempo" : time
 			});
 		dataRemove.remove();
