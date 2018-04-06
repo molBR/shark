@@ -140,8 +140,7 @@ function insertOrder(store,userId,res,prodiVT,source){
 			let prodiName = prodi.name;
 			let prodiQuant = prodi.quantity
 			let prodiValue = prodi.value;
-			let prodiLink = prodi.link; //<---      AQUI MARCAO 
-			console.log("prodiLink: " + prodiLink); 
+			let prodiLink = prodi.link;
 			let prod = {
 				"name": prodiName,
 				"quantity" : prodiQuant,
@@ -167,7 +166,6 @@ function insertOrder(store,userId,res,prodiVT,source){
 	    var PR = {};
 	    //PR.fufillmentText = "CARRINHO:"
 	    PR.fulfillmentMessages = prepareResponseCart(vetorCar,source).fulfillmentMessages;
-	    console.log(JSON.stringify(PR));
 	    res.json(PR);
 		return null;
 		
@@ -181,6 +179,7 @@ function insertOrder(store,userId,res,prodiVT,source){
 function insertProduto(store,userId,produto,res,callback){
 	let data = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
 	let data1 = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos');
+	console.log(JSON.stringify(produto));
 	data.once("value").then(function (snapshot)
 	{
 		let tempProd = snapshot.child("hora").val()
@@ -195,9 +194,20 @@ function insertProduto(store,userId,produto,res,callback){
 				produto
 			});
 		}else{
-			let datanew = data1.push();
-			datanew.set({
-				produto
+			console.log(JSON.stringify(snapshot.child("produtos")));
+			snapshot.child("produtos").forEach(function(singleProd){
+
+				nomeProd = JSON.stringify(singleProd.child("produto/name").val());
+				if(nomeProd !==	JSON.stringify(produto.name)){
+					let datanew = data1.push();
+					datanew.set({
+						produto
+					});
+				}else{
+					let DataUpdate = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos/'+singleProd.key+"/produto");
+					valorTotal = +singleProd.child("produto/quantity").val() + +produto.quantity;
+					DataUpdate.update({"quantity" : valorTotal});
+				}
 			});
 		}
 		callback();
@@ -253,7 +263,6 @@ function prepareMessage(snapshotProduct, store){
 	let buyButton;
 	
 	productLink = productImage.substring(46,productImage.length);
-	console.log("aqui: " + productLink);
 	if(productValueType === 'simple'){
 		productValue = 'R$ '+snapshotProduct.child('value').val(); 
 		buyButton = {
@@ -407,7 +416,6 @@ function retrieveUserData(userId, store, res){
 }
 
 function cartMessage(order){
-  console.log(order);
   let productChoices = "";
   let buttons;
 
