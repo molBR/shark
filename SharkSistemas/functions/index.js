@@ -116,8 +116,11 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 				res.json(responseJson);
 	    	}
     	});
+	}
 
-
+	else if (action === 'quantityChange')
+	{
+		console.log("TROCOU");
 	}
 
     else if(action === 'finalizarCompra'){
@@ -150,21 +153,18 @@ function insertOrder(store,userId,res,prodiVT,source){
 			vetorProd.push(prod);
 
 	});
-		let dataRecieveNew = dataReceive.push();
+	/*	let dataRecieveNew = dataReceive.push();
 		dataRecieveNew.set({
 				"Usuario " : userId,
 				"produtos" : vetorProd,
 				"Tempo" : time
 			});
-		dataRemove.remove();
-		//responseJson = {fulfillmentText: JSON.stringify(vetorProd)};
-	    //res.json(responseJson);
+		dataRemove.remove();*/ //COMENTADO PARA DEIXAR NO ORDER TEMP
 	    vetorProd.forEach(function(prodVet){
 	    	vetorCar.push(cartMessage(prodVet));
 	    });
 
 	    var PR = {};
-	    //PR.fufillmentText = "CARRINHO:"
 	    PR.fulfillmentMessages = prepareResponseCart(vetorCar,source).fulfillmentMessages;
 	    res.json(PR);
 		return null;
@@ -179,7 +179,6 @@ function insertOrder(store,userId,res,prodiVT,source){
 function insertProduto(store,userId,produto,res,callback){
 	let data = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
 	let data1 = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos');
-	console.log(JSON.stringify(produto));
 	data.once("value").then(function (snapshot)
 	{
 		let tempProd = snapshot.child("hora").val()
@@ -194,7 +193,6 @@ function insertProduto(store,userId,produto,res,callback){
 				produto
 			});
 		}else{
-			console.log(JSON.stringify(snapshot.child("produtos")));
 			snapshot.child("produtos").forEach(function(singleProd){
 
 				nomeProd = JSON.stringify(singleProd.child("produto/name").val());
@@ -424,7 +422,7 @@ function cartMessage(order){
     {
           "type":"postback",
           "title":"Mudar Quantidade",
-          "payload":"quatityChange "+order.name
+          "payload":"quantityChange "+order.name
         },
         {
           "type":"postback",
