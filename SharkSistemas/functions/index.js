@@ -474,3 +474,61 @@ function cartMessage(order){
 
     return productPreview;
 }
+
+exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir um http request...
+
+	let store = req.body.store;
+	let action = req.body.action;
+	//console.log(JSON.stringify(req));
+	if(action === 'getStore'){
+		console.log('getStore');
+		let data = firebase.database().ref('stores/'+store);
+		let storeData = {};
+		let products = [];
+		data.once("value").then(function(snapshot) {
+			storeData.name = snapshot.key;
+			storeData.agendamento = snapshot.child('schedule').val();
+			snapshot.child('products').forEach(function(snapshotProduct){
+				console.log(JSON.stringify(snapshotProduct.val()));
+				let product = {};
+				product.name = snapshotProduct.key;
+				product.description = snapshotProduct.child('description').val();
+				product.type = snapshotProduct.child('valueType').val();
+				product.value = '';
+				product.image = snapshotProduct.child('image').val();
+
+				if(product.type === 'simple'){
+					product.value = snapshotProduct.value;
+				}
+				else{
+					product.values = [];
+					snapshotProduct.child('values').forEach(function(snapshotValue){
+						console.log(JSON.stringify(snapshotValue.val()));
+						let choice = {};
+						choice.name = snapshotValue.key;
+						choice.options = [];
+						snapshotValue.child('options').forEach(function(snapshotOption){
+							console.log(JSON.stringify(snapshotOption.val()));
+							let option = {};
+							snapshotOption.forEach(function(snapshotOptionValue){
+								console.log(JSON.stringify(snapshotOptionValue.val()));
+								option.name = snapshotOptionValue.key;
+								option.value = snapshotOptionValue.val();
+							});
+							choice.options.push(option);
+						});
+						product.values.push(choice);
+					});
+				}
+				products.push(product);
+			});
+			storeData.products = products;
+			console.log(JSON.stringify(storeData));
+			res.json(storeData);
+			return null;
+		}).catch(error => {
+			console.error(error);
+			res.json({});
+		});	
+	}	
+});
