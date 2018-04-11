@@ -120,7 +120,21 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 
 	else if (action === 'quantityChange')
 	{
-		console.log("TROCOU");
+		let dataInsert = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos');
+		dataInsert.once("value").then(function(snapshot){
+			snapshot.forEach(function(snapProd){
+				if (parameters.produto===snapProd.child("produto/name").val()){
+					let DataUpdate = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos/'+snapProd.key+"/produto")
+					DataUpdate.update({"quantity" : parameters.quantity});
+				}
+			});
+			res.json("Pedido atualizado!" + parameters.produto + ":" + parameters.quantity);
+			return null;
+		}).catch(error => {
+			console.error(error);
+			let responseJson = prepareError();
+			res.json(responseJson);
+		});	
 	}
 
     else if(action === 'finalizarCompra'){
