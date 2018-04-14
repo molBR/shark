@@ -13,7 +13,6 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 	let source = req.body.originalDetectIntentRequest.source; //qual rede social que o pedido vem
 	let elements = []; //elementos dos produtos 
 	let userId =  req.body.originalDetectIntentRequest.payload.sender.id; //Id do cliente que esta pedindo
-
 	if(action === 'searchProduct'){ //procura o produto no banco de dados
 		let product = parameters.produto;
 		let data = firebase.database().ref('stores/'+store+'/products/'+product); 
@@ -106,7 +105,8 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
     		"name" : product,
     		"quantity" : quantity,
     		"value" : value,
-    		"link" : link
+    		"link" : link,
+    		"prodiVT" : prodiVT
     	};
     	insertProduto(store,userId,prod,res,function(){ //Sincronia cabulosa.
 	    	if(more==="não"){
@@ -135,13 +135,62 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 			let responseJson = prepareError();
 			res.json(responseJson);
 		});	
+	}else if (action === 'removeProd'){
+		let dataSearch = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos');
+			dataSearch.once("value").then(function(snapshot){
+				snapshot.forEach(function(prodEach){
+					if (prodEach.child("produto/name").val() === parameters.produto){
+						let dataRemove = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos/'+prodEach.key);
+						dataRemove.remove();
+					}
+				});
+			res.json("sei la mermao");
+			return null;
+			}).catch(error => {
+				console.error(error);
+				let responseJson = prepareError();
+				res.json(responseJson);
+			});
 	}
-
-    else if(action === 'finalizarCompra'){
-    	newOrder(firebase.database().ref('stores/'+store+'/orders/'+firebase.database.ServerValue.TIMESTAMP), firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp'));
-    }                      
-		
-});
+	else if(action === 'FinalizaCompra'){
+		console.log("FINALIZANDO A COMPRA MALUCO!!!!!!!!");	
+		let dataInsert = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos');
+		let dataRemove = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
+		let dataReceive = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orders');
+		let time = Date.now();
+		dataInsert.once("value").then(function(snapshot){
+			let vetorProd = [];
+			let vetorCar = [];
+			snapshot.forEach(function(snapProd){
+			let Order = new orderClass(JSON.stringify(snapshot.child('produtos')),userId,Date.now());
+			let prodi = snapProd.child('produto').val();
+			let prodiName = prodi.name;
+			let prodiQuant = prodi.quantity
+			let prodiValue = prodi.value;
+			let prodiLink = prodi.link;
+			let prodiVT = prodi.prodiVT;
+			let prod = {
+				"name": prodiName,
+				"quantity" : prodiQuant,
+				"value" : prodiValue,
+				"image" : "http://res.cloudinary.com/uaihome/image/upload/"+prodiLink,
+				"productValueType" : prodiVT};
+			vetorProd.push(prod);
+		});
+		let dataRecieveNew = dataReceive.push();
+		dataRecieveNew.set({
+				"Usuario " : userId,
+				"produtos" : vetorProd,
+				"Tempo" : time
+			});
+		dataRemove.remove();
+		return null;
+		}).catch(error => {
+			console.error(error);
+			let responseJson = prepareError();
+			res.json(responseJson);
+		});	
+	}
 
 function insertOrder(store,userId,res,prodiVT,source){
 	let dataInsert = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos');
@@ -433,7 +482,7 @@ function cartMessage(order){
 
   if(order.productValueType === 'simple'){
     buttons = [
-    {
+    	{
           "type":"postback",
           "title":"Mudar Quantidade",
           "payload":"quantityChange "+order.name
@@ -442,6 +491,11 @@ function cartMessage(order){
           "type":"postback",
           "title":"Retirar do carrinho",
           "payload":"deleteProduct "+order.name
+        },
+        {
+        	"type":"postback",
+        	"title":"Finalizar Pedido",
+        	"payload":"FinalizaCompra"
         }];
   }
   else{
@@ -461,7 +515,7 @@ function cartMessage(order){
         },
         {
           "type":"postback",
-          "title":"Retirar do carrinho",
+          "title":"Retirar",
           "payload":"deleteProduct "+order.name
         }];
   }
@@ -474,6 +528,7 @@ function cartMessage(order){
 
     return productPreview;
 }
+});
 
 exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir um http request...
 
