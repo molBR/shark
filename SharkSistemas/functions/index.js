@@ -186,7 +186,7 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 		dataRemove.remove();
 		return null;
 		}).catch(error => {
-			console.error(error);
+				console.error(error);
 			let responseJson = prepareError();
 			res.json(responseJson);
 		});	
@@ -226,10 +226,9 @@ function insertOrder(store,userId,res,prodiVT,source){
 	    vetorProd.forEach(function(prodVet){
 	    	vetorCar.push(cartMessage(prodVet));
 	    });
-
 	    var PR = {};
-	    PR.fulfillmentMessages = prepareResponseCart(vetorCar,source).fulfillmentMessages;
-	    res.json(PR);
+	    //PR.fulfillmentMessages = prepareResponseCart(vetorCar,source).fulfillmentMessages; //mostrar carro
+	    res.json({"fulfillmentText" : "Por favor, informe seu CEP"});
 		return null;
 		
 	}).catch(error => {
@@ -302,7 +301,7 @@ function prepareChoice(snapshotText, snapshotQR){
 	};
 	return choices;
 
-}
+}	
 
 function prepareOpt(snapshotResponse1,snapshotResponse2){
 	var options = {
@@ -492,11 +491,11 @@ function cartMessage(order){
           "title":"Retirar do carrinho",
           "payload":"deleteProduct "+order.name
         },
-        {
+       	{
         	"type":"postback",
         	"title":"Finalizar Pedido",
         	"payload":"FinalizaCompra"
-        }];
+        }]; //Aqui que edita bro
   }
   else{
 	  Object.keys(order.choices).forEach(function(key){
