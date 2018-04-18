@@ -528,20 +528,26 @@ function cartMessage(order){
     return productPreview;
 }
 });
-
 exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir um http request...
 
 	let store = req.body.store;
 	let action = req.body.action;
 	//console.log(JSON.stringify(req));
-	if(action === 'getStore'){
-		console.log('getStore');
+
+
+	if(action === 'getStoreProducts'){
 		let data = firebase.database().ref('stores/'+store);
 		let storeData = {};
 		let products = [];
 		data.once("value").then(function(snapshot) {
 			storeData.name = snapshot.key;
 			storeData.agendamento = snapshot.child('schedule').val();
+			storeData.aberto = snapshot.child('open').val();
+			storeData.tipoLoja = snapshot.child('type').val();
+			storeData.categories = [];
+			snapshot.child('categories').forEach(function(snapshotCategory){
+				storeData.categories.push(snapshotCategory.val());
+			});
 			snapshot.child('products').forEach(function(snapshotProduct){
 				console.log(JSON.stringify(snapshotProduct.val()));
 				let product = {};
@@ -550,6 +556,12 @@ exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir
 				product.type = snapshotProduct.child('valueType').val();
 				product.value = '';
 				product.image = snapshotProduct.child('image').val();
+				product.categories = [];
+				snapshotProduct.child('categories').forEach(function(snapshotCategory){
+					if(snapshotCategory.val() === true){
+						product.categories.push(snapshotCategory.key);
+					}
+				});
 
 				if(product.type === 'simple'){
 					product.value = snapshotProduct.value;
@@ -578,6 +590,22 @@ exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir
 			});
 			storeData.products = products;
 			console.log(JSON.stringify(storeData));
+			res.json(storeData);
+			return null;
+		}).catch(error => {
+			console.error(error);
+			res.json({});
+		});	
+	}	
+	else if(action === 'getStore'){
+		let data = firebase.database().ref('stores/'+store);
+		let storeData = {};
+		let products = [];
+		data.once("value").then(function(snapshot) {
+			storeData.name = snapshot.key;
+			storeData.agendamento = snapshot.child('schedule').val();
+			storeData.aberto = snapshot.child('open').val();
+			storeData.tipoLoja = snapshot.child('type').val();
 			res.json(storeData);
 			return null;
 		}).catch(error => {
