@@ -4,6 +4,7 @@ const Produto = require('./produtoClass.js'); //classe de cadastro de produto
 const orderClass = require ('./orderClass.js'); //classe de cadastro de ordem
 const admin = require('firebase-admin'); //autenticacao firebase
 var firebase = admin.initializeApp(functions.config().firebase); //objeto para interacao com o firebase 
+var request = require('request');
 
 exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que surgir um http request...
 	
@@ -189,8 +190,45 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 				console.error(error);
 			let responseJson = prepareError();
 			res.json(responseJson);
-		});	
+		});
+
 	}
+
+	else if(action === 'gotCEP'){
+		let event;
+		let responseJson = {};
+		let end = {};
+		end.cep = parameters.cep;
+
+		request('http://api.postmon.com.br/v1/cep/'+end.cep, function (error, response, body) { //validar o cep
+			console.log('error:', error); // Print the error if one occurred
+			console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
+			console.log('body:', body); // Print the HTML for the Google homepage.
+			if(response.statusCode === 200){
+				end.logradouro = body.logradouro;
+				end.bairro = body.bairro;
+				end.cidade = body.cidade;
+				event = "getEND";//segue o jogo
+			}
+			else if(response.statusCode === 404){
+				console.log("entrou");
+				event = "getCEP"; //não existe o cep
+				responseJson.fulfillmentText = "CEP incorreto, digite novamente";
+			}
+		});
+
+		responseJson.followupEventInput = prepareFollowUpEvent(event);
+		console.log(JSON.stringify(responseJson));
+		res.json(responseJson);	
+	}
+
+	else if(action === 'gotEND'){
+		let numero = parameters.numero;
+		let refCom = parameters.refCom;
+		//carrinho
+	}
+
+});
 
 function insertOrder(store,userId,res,prodiVT,source){
 	let dataInsert = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos');
@@ -297,10 +335,7 @@ function insertProduto(store,userId,produto,res,callback){
 		});	
 }
 
-
-
-function prepareFollowUpEvent(event)
-{
+function prepareFollowUpEvent(event){
 	var	message = {
 		"name" : event,
 		"languageCode" : "pt-BR"
@@ -546,76 +581,68 @@ function cartMessage(order){
 
     return productPreview;
 }
-});
+
 exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir um http request...
 
 	let store = req.body.store;
 	let action = req.body.action;
-	//console.log(JSON.stringify(req));
-
 
 	if(action === 'getStoreProducts'){
-		let data = firebase.database().ref('stores/'+store);
 		let storeData = {};
 		let products = [];
-		data.once("value").then(function(snapshot) {
-			storeData.name = snapshot.key;
-			storeData.agendamento = snapshot.child('schedule').val();
-			storeData.aberto = snapshot.child('open').val();
-			storeData.tipoLoja = snapshot.child('type').val();
-			storeData.categories = [];
-			storeData.telefones = 
+		storeData.categories=[];
+		let data = firebase.database().ref('stores/'+store+'/products');
+		data.once("value").then(function(snapshot) { 
 			snapshot.child('categories').forEach(function(snapshotCategory){
 				storeData.categories.push(snapshotCategory.val());
 			});
-			snapshot.child('products').forEach(function(snapshotProduct){
-				console.log(JSON.stringify(snapshotProduct.val()));
-				let product = {};
-				product.name = snapshotProduct.key;
-				product.description = snapshotProduct.child('description').val();
-				product.type = snapshotProduct.child('valueType').val();
-				product.value = '';
-				product.image = snapshotProduct.child('image').val();
-				product.categories = [];
-				snapshotProduct.child('categories').forEach(function(snapshotCategory){
-					if(snapshotCategory.val() === true){
-						product.categories.push(snapshotCategory.key);
-					}
-				});
-
-				if(product.type === 'simple'){
-					product.value = snapshotProduct.value;
-				}
-				else{
-					product.values = [];
-					snapshotProduct.child('values').forEach(function(snapshotValue){
-						console.log(JSON.stringify(snapshotValue.val()));
-						let choice = {};
-						choice.name = snapshotValue.key;
-						choice.options = [];
-						snapshotValue.child('options').forEach(function(snapshotOption){
-							console.log(JSON.stringify(snapshotOption.val()));
-							let option = {};
-							snapshotOption.forEach(function(snapshotOptionValue){
-								console.log(JSON.stringify(snapshotOptionValue.val()));
-								if(snapshotOptionValue.key === 'name'){
-									option.size = snapshotOptionValue.val();
-								}
-								else{
-									option.name = snapshotOptionValue.key;
-									option.value = snapshotOptionValue.val();
-								}
-							});
-							choice.options.push(option);
-						});
-						product.values.push(choice);
+			snapshot.forEach(function(snapshotProduct){
+				if(snapshotProduct.key !== 'categories'){
+					let product = {};
+					product.name = snapshotProduct.key;
+					product.description = snapshotProduct.child('description').val();
+					product.type = snapshotProduct.child('valueType').val();
+					product.value = '';
+					product.image = snapshotProduct.child('image').val();
+					product.categories = [];
+					snapshotProduct.child('categories').forEach(function(snapshotCategory){
+						if(snapshotCategory.val() === true){
+							product.categories.push(snapshotCategory.key);
+						}
 					});
+
+					if(product.type === 'simple'){
+						product.value = snapshotProduct.value;
+					}
+					else{
+						product.values = [];
+						snapshotProduct.child('values').forEach(function(snapshotValue){
+							let choice = {};
+							choice.name = snapshotValue.key;
+							choice.options = [];
+							snapshotValue.child('options').forEach(function(snapshotOption){
+								let option = {};
+								snapshotOption.forEach(function(snapshotOptionValue){
+									if(snapshotOptionValue.key === 'name'){
+										option.size = snapshotOptionValue.val();
+									}
+									else{
+										option.name = snapshotOptionValue.key;
+										console.log(JSON.stringify(option.name));
+										option.value = snapshotOptionValue.val();
+									}
+								});
+								choice.options.push(option);
+							});
+							product.values.push(choice);
+						});
+					}
+					products.push(product);
 				}
-				products.push(product);
 			});
 			storeData.products = products;
-			console.log(JSON.stringify(storeData));
-			res.json(storeData);
+			storeBasicInfo(storeData, res, store);
+			//res.json(storeData);
 			return null;
 		}).catch(error => {
 			console.error(error);
@@ -623,7 +650,7 @@ exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir
 		});	
 	}	
 	else if(action === 'getStore'){
-		let data = firebase.database().ref('stores/'+store);
+		let data = firebase.database().ref('stores/'+store+'/info');
 		let storeData = {};
 		let products = [];
 		data.once("value").then(function(snapshot) {
@@ -637,5 +664,25 @@ exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir
 			console.error(error);
 			res.json({});
 		});	
+	}
+
+	else if (action === 'getHistory'){
+		let data = firebase.database().ref('stores/'+store+'/orders')
 	}	
 });
+
+function storeBasicInfo(jsonData, res, store){
+	let storeData = jsonData;
+	let data = firebase.database().ref('stores/'+store+'/basicInfo');
+	data.once("value").then(function(snapshot) {
+		storeData.agendamento = snapshot.child('schedule').val();
+		storeData.aberto = snapshot.child('open').val();
+		storeData.tipoLoja = snapshot.child('type').val();
+
+		res.json(storeData);
+		return null;
+	}).catch(error => {
+		console.error(error);
+		res.json({});
+	});	
+}
