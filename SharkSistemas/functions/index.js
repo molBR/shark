@@ -83,7 +83,7 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
     			}
     			choice = prepareChoice(queryMessage, choicesPreview);
     		});
-    		let responseJson = prepareQRMsg(choice,choiceType);
+    		let responseJson = prepareFollowUpEvent(choice);
     		res.json(responseJson);
     		return null
     	}).catch(error => {
@@ -245,7 +245,7 @@ function insertOrder(store,userId,res,prodiVT,source){
 	    	let responseJson = prepareError();
 	    	res.json(responseJson);
 	    });
-	    res.json({"fulfillmentText" : "Por favor, informe seu CEP"});
+	    res.json({"followupEventInput" : prepareFollowUpEvent("getCEP")});
 	    //res.json(PR);
 		return null;
 		
@@ -299,16 +299,13 @@ function insertProduto(store,userId,produto,res,callback){
 
 
 
-function prepareQRMsg(snapshotVec,choiceType)
+function prepareFollowUpEvent(event)
 {
 	var	message = {
-		"followupEventInput": {
-			"name" : choiceType,
-			"languageCode" : "pt-BR"
-		}
+		"name" : event,
+		"languageCode" : "pt-BR"
 	};
 	return message;
-
 }
 
 function prepareChoice(snapshotText, snapshotQR){
