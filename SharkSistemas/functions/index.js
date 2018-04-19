@@ -196,6 +196,7 @@ function insertOrder(store,userId,res,prodiVT,source){
 	let dataInsert = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos');
 	let dataReceive = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orders');
 	let dataRemove = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
+	let dataPlace = firebase.database().ref('stores/'+store+'/clients/'+userId+'/place');
 	let time = Date.now();
 		dataInsert.once("value").then(function(snapshot){
 			let vetorProd = [];
@@ -231,9 +232,21 @@ function insertOrder(store,userId,res,prodiVT,source){
 	    quickReplyOption.push(prepareOpt("finalizar","payload finalizar compra"));
 	    let quickR = prepareChoice("Ou,",quickReplyOption);
 						        
-	    PR.fulfillmentMessages = prepareResponseCart(vetorCar,source,quickR).fulfillmentMessages; //mostrar carro
-	    //res.json({"fulfillmentText" : "Por favor, informe seu CEP"});
-	    res.json(PR);
+	    //PR.fulfillmentMessages = prepareResponseCart(vetorCar,source,quickR).fulfillmentMessages; //mostrar carro
+	    dataPlace.once("value").then(function(place){
+	    	if(place.exists()){
+	    		console.log("Existe");
+	    	}else{
+	    		console.log("Não");
+	    	}
+	    	return null;
+	    }).catch(error =>{
+	    	console.error(error);
+	    	let responseJson = prepareError();
+	    	res.json(responseJson);
+	    });
+	    res.json({"fulfillmentText" : "Por favor, informe seu CEP"});
+	    //res.json(PR);
 		return null;
 		
 	}).catch(error => {
