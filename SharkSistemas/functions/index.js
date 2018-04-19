@@ -227,8 +227,18 @@ function insertOrder(store,userId,res,prodiVT,source){
 	    	vetorCar.push(cartMessage(prodVet));
 	    });
 	    var PR = {};
-	    //PR.fulfillmentMessages = prepareResponseCart(vetorCar,source).fulfillmentMessages; //mostrar carro
-	    res.json({"fulfillmentText" : "Por favor, informe seu CEP"});
+	    var quickR = {
+			"text": "Ou,",
+			"quick_replies":[{
+				"content_type":"text",
+	    		"title":"finalizar",
+	    		"payload":"okFunfando"
+			}]
+		};
+						        
+	    PR.fulfillmentMessages = prepareResponseCart(vetorCar,source,quickR).fulfillmentMessages; //mostrar carro
+	    //res.json({"fulfillmentText" : "Por favor, informe seu CEP"});
+	    res.json(PR);
 		return null;
 		
 	}).catch(error => {
@@ -306,7 +316,7 @@ function prepareChoice(snapshotText, snapshotQR){
 function prepareOpt(snapshotResponse1,snapshotResponse2){
 	var options = {
 		"content_type":"text",
-	    "title":snapshotResponse1 + ": 	R$" + snapshotResponse2,
+	    "title":"finalizar",
 	    "payload":"okFunfando"					        
 	};
 	return options;
@@ -392,7 +402,7 @@ function prepareResponse(elements, source){
     return responseJson;	   	
 }
 
-function prepareResponseCart(elements, source){
+function prepareResponseCart(elements, source, quickR){
 	let message = {
 		"fulfillmentMessages": [{
 			"payload": {
@@ -413,6 +423,10 @@ function prepareResponseCart(elements, source){
     				}
     			}
 			}
+		},{
+			"payload":{
+				"facebook":quickR
+			}
 		}]
 	};
 	let responseJson = {};
@@ -423,7 +437,7 @@ function prepareResponseCart(elements, source){
     else {
     	responseJson = {fulfillmentText: message.fulfillmentText}; 
     }
-
+    console.log(JSON.stringify(responseJson));
     return responseJson;	   	
 }
 
@@ -545,6 +559,7 @@ exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir
 			storeData.aberto = snapshot.child('open').val();
 			storeData.tipoLoja = snapshot.child('type').val();
 			storeData.categories = [];
+			storeData.telefones = 
 			snapshot.child('categories').forEach(function(snapshotCategory){
 				storeData.categories.push(snapshotCategory.val());
 			});
@@ -578,8 +593,13 @@ exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir
 							let option = {};
 							snapshotOption.forEach(function(snapshotOptionValue){
 								console.log(JSON.stringify(snapshotOptionValue.val()));
-								option.name = snapshotOptionValue.key;
-								option.value = snapshotOptionValue.val();
+								if(snapshotOptionValue.key === 'name'){
+									option.size = snapshotOptionValue.val();
+								}
+								else{
+									option.name = snapshotOptionValue.key;
+									option.value = snapshotOptionValue.val();
+								}
 							});
 							choice.options.push(option);
 						});
