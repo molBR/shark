@@ -227,14 +227,9 @@ function insertOrder(store,userId,res,prodiVT,source){
 	    	vetorCar.push(cartMessage(prodVet));
 	    });
 	    var PR = {};
-	    var quickR = {
-			"text": "Ou,",
-			"quick_replies":[{
-				"content_type":"text",
-	    		"title":"finalizar",
-	    		"payload":"okFunfando"
-			}]
-		};
+	    let quickReplyOption = [];
+	    quickReplyOption.push(prepareOpt("finalizar","payload finalizar compra"));
+	    let quickR = prepareChoice("Ou,",quickReplyOption);
 						        
 	    PR.fulfillmentMessages = prepareResponseCart(vetorCar,source,quickR).fulfillmentMessages; //mostrar carro
 	    //res.json({"fulfillmentText" : "Por favor, informe seu CEP"});
@@ -316,8 +311,8 @@ function prepareChoice(snapshotText, snapshotQR){
 function prepareOpt(snapshotResponse1,snapshotResponse2){
 	var options = {
 		"content_type":"text",
-	    "title":"finalizar",
-	    "payload":"okFunfando"					        
+	    "title":snapshotResponse1,
+	    "payload":snapshotResponse2					        
 	};
 	return options;
 }
