@@ -204,13 +204,15 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 			console.log('error:', error); // Print the error if one occurred
 			console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
 			console.log('body:', body); // Print the HTML for the Google homepage.
-			if(response.statusCode === 200){
+			console.log("OLHA ISSO AQUI BROTHER: " + response.statusCode);
+			if(String(response.statusCode) === "200"){
+				console.log("entrei aqui");
 				end.logradouro = body.logradouro;
 				end.bairro = body.bairro;
 				end.cidade = body.cidade;
 				event = "getEND";//segue o jogo
 			}
-			else if(response.statusCode === 404){
+			else if(String(response.statusCode) === "404"){
 				console.log("entrou");
 				event = "getCEP"; //não existe o cep
 				responseJson.fulfillmentText = "CEP incorreto, digite novamente";
@@ -582,107 +584,29 @@ function cartMessage(order){
     return productPreview;
 }
 
-exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir um http request...
 
+
+exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir um http request...
+	var getFunctions = require('./getFunctions.js');
 	let store = req.body.store;
 	let action = req.body.action;
 
 	if(action === 'getStoreProducts'){
-		let storeData = {};
-		let products = [];
-		storeData.categories=[];
 		let data = firebase.database().ref('stores/'+store+'/products');
-		data.once("value").then(function(snapshot) { 
-			snapshot.child('categories').forEach(function(snapshotCategory){
-				storeData.categories.push(snapshotCategory.val());
-			});
-			snapshot.forEach(function(snapshotProduct){
-				if(snapshotProduct.key !== 'categories'){
-					let product = {};
-					product.name = snapshotProduct.key;
-					product.description = snapshotProduct.child('description').val();
-					product.type = snapshotProduct.child('valueType').val();
-					product.value = '';
-					product.image = snapshotProduct.child('image').val();
-					product.categories = [];
-					snapshotProduct.child('categories').forEach(function(snapshotCategory){
-						if(snapshotCategory.val() === true){
-							product.categories.push(snapshotCategory.key);
-						}
-					});
-
-					if(product.type === 'simple'){
-						product.value = snapshotProduct.value;
-					}
-					else{
-						product.values = [];
-						snapshotProduct.child('values').forEach(function(snapshotValue){
-							let choice = {};
-							choice.name = snapshotValue.key;
-							choice.options = [];
-							snapshotValue.child('options').forEach(function(snapshotOption){
-								let option = {};
-								snapshotOption.forEach(function(snapshotOptionValue){
-									if(snapshotOptionValue.key === 'name'){
-										option.size = snapshotOptionValue.val();
-									}
-									else{
-										option.name = snapshotOptionValue.key;
-										console.log(JSON.stringify(option.name));
-										option.value = snapshotOptionValue.val();
-									}
-								});
-								choice.options.push(option);
-							});
-							product.values.push(choice);
-						});
-					}
-					products.push(product);
-				}
-			});
-			storeData.products = products;
-			storeBasicInfo(storeData, res, store);
-			//res.json(storeData);
-			return null;
-		}).catch(error => {
-			console.error(error);
-			res.json({});
-		});	
+		getFunctions.storeProducts(data, res, store);
 	}	
-	else if(action === 'getStore'){
+	else if(action === 'getStoreBasicInfo'){
+		let data = firebase.database().ref('stores/'+store+'/basicInfo');
+		getFunctions.storeBasicInfo(data, res, store);
+	}
+	else if(action === 'getStoreInfo'){
 		let data = firebase.database().ref('stores/'+store+'/info');
-		let storeData = {};
-		let products = [];
-		data.once("value").then(function(snapshot) {
-			storeData.name = snapshot.key;
-			storeData.agendamento = snapshot.child('schedule').val();
-			storeData.aberto = snapshot.child('open').val();
-			storeData.tipoLoja = snapshot.child('type').val();
-			res.json(storeData);
-			return null;
-		}).catch(error => {
-			console.error(error);
-			res.json({});
-		});	
+		getFunctions.storeInfo(data, res, store);
 	}
 
 	else if (action === 'getHistory'){
-		let data = firebase.database().ref('stores/'+store+'/orders')
+		let data = firebase.database().ref('stores/'+store+'/orders');
+		let id = req.body.id;
+		getFunctions.storeHistory(data, id, res, store);
 	}	
 });
-
-function storeBasicInfo(jsonData, res, store){
-	let storeData = jsonData;
-	let data = firebase.database().ref('stores/'+store+'/basicInfo');
-	data.once("value").then(function(snapshot) {
-		storeData.agendamento = snapshot.child('schedule').val();
-		storeData.aberto = snapshot.child('open').val();
-		storeData.tipoLoja = snapshot.child('type').val();
-
-		res.json(storeData);
-		return null;
-	}).catch(error => {
-		console.error(error);
-		res.json({});
-	});	
-}
