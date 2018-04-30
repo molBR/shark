@@ -1,5 +1,4 @@
 const functions = require('firebase-functions'); //funcoes da api firebase
-//const Compra = require ('ClasseCompra');
 const Produto = require('./produtoClass.js'); //classe de cadastro de produto
 const orderClass = require ('./orderClass.js'); //classe de cadastro de ordem
 const admin = require('firebase-admin'); //autenticacao firebase
@@ -486,7 +485,6 @@ function prepareError(){
 	responseJson = {fulfillmentText: "Ocorreu um erro no servidor :(. \nTente novamente."};
 	return responseJson;
 }
-
 function newOrder(orderRef, orderTemp, res){
 	orderTemp.once('value').then(function(snapshot){
 		orderRef.set({
@@ -581,8 +579,6 @@ function cartMessage(order){
     return productPreview;
 }
 
-
-
 exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir um http request...
 	var getFunctions = require('./getFunctions.js');
 	let store = req.body.store;
@@ -605,6 +601,11 @@ exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir
 		let data = firebase.database().ref('stores/'+store+'/orders');
 		let id = req.body.id;
 		getFunctions.storeHistory(data, id, res, store);
+	}
+
+	else if (action === 'getDepoimentos'){
+		let data = firebase.database().ref('stores/'+store+'/depoimentos');
+		getFunctions.storeDepoimentos(data, res, store);
 	}	
 });
 

@@ -118,12 +118,18 @@ module.exports={
 			res.json({});
 		});	
 	},
-	storeDepoimentos: function (data, id, res, store){
+	storeDepoimentos: function (data, res, store){
 		let storeData = {};
 		data.once("value").then(function(snapshot) {
 			storeData.depoimentos = [];
 			snapshot.forEach(function(snapshotDepoimentos){
-				storeData.depoimentos.push(snapshotDepoimentos.val());
+				let depoimento = {};
+				let date = new Date(parseInt(snapshotDepoimentos.key));
+				depoimento.nome = snapshotDepoimentos.child('nome').val();
+				depoimento.depoimento = snapshotDepoimentos.child('depoimento').val();
+				depoimento.classif = snapshotDepoimentos.child('classif').val();
+				depoimento.data = date.getDate()+'/'+date.getMonth()+'/'+date.getFullYear();
+				storeData.depoimentos.push(depoimento);
 			});			
 			res.json(storeData);
 			return null;
