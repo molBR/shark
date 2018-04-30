@@ -352,7 +352,6 @@ function prepareChoice(snapshotText, snapshotQR){
 		"quick_replies":snapshotQR
 	};
 	return choices;
-
 }	
 
 function prepareOpt(snapshotResponse1,snapshotResponse2){
@@ -363,7 +362,6 @@ function prepareOpt(snapshotResponse1,snapshotResponse2){
 	};
 	return options;
 }
-
 
 function prepareMessage(snapshotProduct, store){
 	let productDescription = snapshotProduct.child("description").val();
@@ -499,8 +497,7 @@ function newOrder(orderRef, orderTemp, res){
 		console.error(error);
 		let responseJson = prepareError();
 		res.json(responseJson);
-	});				
-	
+	});					
 }
 
 function newProduct(productRef, product){
@@ -610,3 +607,21 @@ exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir
 		getFunctions.storeHistory(data, id, res, store);
 	}	
 });
+
+exports.webappSave = functions.https.onRequest((req, res) => { //Toda vez que surgir um http request...
+	
+	var saveFunctions = require('./saveFunctions.js');
+	let store = req.body.store;
+	let action = req.body.action;
+	console.log(JSON.stringify(req.body));
+	if(action === 'saveProduct'){
+		let product = req.body.product;
+		console.log(JSON.stringify(product));
+		let productRef = firebase.database().ref('stores/'+store+'/products/'+product.nome);
+		saveFunctions.saveProduct(productRef, product, res);
+	}
+	res.json({"resposta":"nãoOK"});
+
+});
+
+			

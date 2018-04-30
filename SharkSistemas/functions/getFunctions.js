@@ -92,6 +92,7 @@ module.exports={
 			storeData.aberto = snapshot.child('open').val();
 			storeData.tipoLoja = snapshot.child('type').val();
 			storeData.categories = snapshot.child('categories').val();
+			console.log(JSON.stringify(storeData));
 			res.json(storeData);
 			return null;
 		}).catch(error => {
@@ -102,13 +103,28 @@ module.exports={
 
 	storeHistory: function (data, id, res, store){
 		let storeData = {};
+		storeData.pedidos = [];
 		data.orderByChild("usuario").equalTo(id).once("value").then(function(snapshot) {
-			console.log(JSON.stringify(snapshot));
 			snapshot.forEach(function(snapshotOrder){
-				console.log(JSON.stringify(snapshotOrder));
-				storeData.produtos = snapshotOrder.child('products').val();
+				let order = {};
+				order.produtos = snapshotOrder.child('products').val();
+				order.pagamento = snapshotOrder.child('pagamento').val();
+				storeData.pedidos.push(order);
 			});
-			
+			res.json(storeData);
+			return null;
+		}).catch(error => {
+			console.error(error);
+			res.json({});
+		});	
+	},
+	storeDepoimentos: function (data, id, res, store){
+		let storeData = {};
+		data.once("value").then(function(snapshot) {
+			storeData.depoimentos = [];
+			snapshot.forEach(function(snapshotDepoimentos){
+				storeData.depoimentos.push(snapshotDepoimentos.val());
+			});			
 			res.json(storeData);
 			return null;
 		}).catch(error => {
