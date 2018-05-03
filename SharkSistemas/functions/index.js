@@ -194,42 +194,51 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 	}
 
 	else if(action === 'gotCEP'){
-		let event;
-		let responseJson = {};
-		let end = {};
-		end.cep = parameters.cep;
-
-		request('http://api.postmon.com.br/v1/cep/'+end.cep, function (error, response, body) { //validar o cep
-			console.log('error:', error); // Print the error if one occurred
-			console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
-			console.log('body:', body); // Print the HTML for the Google homepage.
-			console.log("OLHA ISSO AQUI BROTHER: " + response.statusCode);
-			if(String(response.statusCode) === "200"){
-				console.log("entrei aqui");
-				end.logradouro = body.logradouro;
-				end.bairro = body.bairro;
-				end.cidade = body.cidade;
-				event = "getEND";//segue o jogo
-			}
-			else if(String(response.statusCode) === "404"){
-				console.log("entrou");
-				event = "getCEP"; //não existe o cep
-				responseJson.fulfillmentText = "CEP incorreto, digite novamente";
-			}
+		handleCEP(parameters,res,function(responseJson,event){ //Outra sincronia cabulosa
+			responseJson.followupEventInput = prepareFollowUpEvent(event);
+			console.log(JSON.stringify(responseJson));
+			res.json(responseJson);	
 		});
-
-		responseJson.followupEventInput = prepareFollowUpEvent(event);
-		console.log(JSON.stringify(responseJson));
-		res.json(responseJson);	
 	}
 
 	else if(action === 'gotEND'){
 		let numero = parameters.numero;
 		let refCom = parameters.refCom;
-		//carrinho
+		console.log("OLHA OS PARAMETRO BRO: " + JSON.stringify(parameters));
 	}
 
 });
+
+
+function handleCEP(parameters,res,callback){
+	let event;
+	let responseJson = {};
+	let end = {};
+	end.cep = parameters.cep;
+
+	request('http://api.postmon.com.br/v1/cep/'+end.cep, function (error, response, body) { //validar o cep
+		console.log(body);
+		body = JSON.parse(body);
+		if (body.cidade !== "Itabira"){
+			event = "getCEP"; //não existe o cep
+			responseJson.fulfillmentText = "Desculpe, nós não atendemos nessa cidade";
+		}
+		else if(String(response.statusCode) === "200"){
+			end.logradouro = body.logradouro;
+			end.bairro = body.bairro;
+			end.cidade = body.cidade;
+			event = "getEND";//segue o jogo
+		}
+		else if(String(response.statusCode) === "404"){
+			event = "getCEP"; //não existe o cep
+			responseJson.fulfillmentText = "CEP incorreto, digite novamente";
+		}
+		callback(responseJson,event);
+	});
+	
+}
+
+
 
 function insertOrder(store,userId,res,prodiVT,source){
 	let dataInsert = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos');
