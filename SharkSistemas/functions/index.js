@@ -607,9 +607,9 @@ exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir
 	}
 
 	else if (action === 'getHistory'){
-		let data = firebase.database().ref('stores/'+store+'/orders');
 		let id = req.body.id;
-		getFunctions.storeHistory(data, id, res, store);
+		let data = firebase.database().ref('stores/'+store+'/clients/'+id+'/orders');
+		getFunctions.storeHistory(data, res, store);
 	}
 
 	else if (action === 'getDepoimentos'){
@@ -633,5 +633,4 @@ exports.webappSave = functions.https.onRequest((req, res) => { //Toda vez que su
 	res.json({"resposta":"nãoOK"});
 
 });
-
 			
