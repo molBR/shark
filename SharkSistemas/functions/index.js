@@ -153,7 +153,6 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 			});
 	}
 	else if(action === 'FinalizaCompra'){
-		console.log("FINALIZANDO A COMPRA MALUCO!!!!!!!!");	
 		let dataInsert = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/produtos');
 		let dataRemove = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
 		let dataReceive = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orders');
@@ -197,7 +196,6 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 		let dataPlace = firebase.database().ref('stores/'+store+'/clients/'+userId+'/place');
 		handleCEP(parameters,res,function(responseJson,event,end){ //Outra sincronia cabulosa
 			if (event === "getEND"){
-				responseJson.followupEventInput = prepareFollowUpEvent(event);
 				dataPlace.set({
 					"CEP" : parameters.cep,
 					"logradouro" : end.logradouro,
@@ -205,24 +203,58 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 					"cidade" : end.cidade
 				});	
 			}
+			responseJson.followupEventInput = prepareFollowUpEvent(event);
 			res.json(responseJson);	
 		});
 	}
 
 	else if(action === 'gotEND'){
 		let dataPlace = firebase.database().ref('stores/'+store+'/clients/'+userId+'/place');
-		console.log(parameters);
 		let numero = parameters.numero;
 		let refComp = parameters.refComp;
+		let responseJson = {};
 		dataPlace.update({
 			"numero" : numero,
 			"refCom" : refComp
-		});
+		});/*
+		responseJson.followupEventInput = prepareFollowUpEvent("paymentMethod");
+		res.json(responseJson);*/
+		prepareCardPayment(store,res);	
+	}
+
+	else if(action === 'paymentMethod'){
+		console.log("PAGA LOGO MERMAO");
 	}
 
 });
 
+function prepareCardPayment(store,res){
+	let dataPay = firebase.database().ref('stores/'+store+'/info/'+'/payment/'+'formas');
+	dataPay.once("value").then(function(snapshotPay){
+		snapshotPay.forEach(function(snapForPay){
+			console.log("OLHA O FOR" + JSON.stringify(snapForPay));
+		});
+		return null;
+	}).catch(error => {
+			console.error(error);
+			let responseJson = prepareError();
+			res.json(responseJson);
+		});	
+}
 
+	/*
+function prepareCardConfirm(store, userI){
+	let dataPlace = firebase.database().ref('stores/'+store+'/clients/'+userId+'/place');
+	let dataOrder = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
+	dataPlace.once("value").then(function(snapshotPlace){
+		dataOrder.once("value").then(function(snapshotOrder){
+
+		})
+	});
+
+
+}
+*/
 function handleCEP(parameters,res,callback){
 	let event;
 	let responseJson = {};
@@ -394,7 +426,6 @@ function prepareMessage(snapshotProduct, store){
 	let productValueType = snapshotProduct.child('valueType').val();
 	let productValue = "";
 	let buyButton;
-	
 	productLink = productImage.substring(46,productImage.length);
 	if(productValueType === 'simple'){
 		productValue = 'R$ '+snapshotProduct.child('value').val(); 
