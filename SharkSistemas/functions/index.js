@@ -222,18 +222,78 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 		prepareCardPayment(store,res);	
 	}
 
-	else if(action === 'paymentMethod'){
-		console.log("PAGA LOGO MERMAO");
-	}
+	else if(action === 'gotPaymentMethod'){
 
+		let paymentMethod = parameters.paymentMethod;
+
+		let dataPayment = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/payment');
+		dataPayment.update({
+			"method" : paymentMethod
+		});
+		let dataOrder = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
+		let responseJson = prepareReceipt(res, dataOrder, source);
+ 		
+	}
 });
 
-function prepareCardPayment(store,res){
-	let dataPay = firebase.database().ref('stores/'+store+'/info/'+'/payment/'+'formas');
-	dataPay.once("value").then(function(snapshotPay){
-		snapshotPay.forEach(function(snapForPay){
-			console.log("OLHA O FOR" + JSON.stringify(snapForPay));
+function prepareReceipt(res, dataOrder, source){
+	let elements = [];
+
+	dataOrder.once('value').then(function(snapshotOrder){
+		let paymentMethod = snapshotOrder.child('payment/method').val();
+		console.log(JSON.stringify(snapshotOrder));
+		snapshotOrder.child('produtos').forEach(function(snapshotProduct){
+			let element ={
+				"title":snapshotProduct.child('produto/name').val(),
+				"subtitle":'',
+				"quantity":snapshotProduct.child('produto/quantity').val(),
+				"price":snapshotProduct.child('produto/value').val(),
+				"currency":"BRL",
+				"image_url":"http://res.cloudinary.com/uaihome/image/upload/"+snapshotProduct.child('produto/link').val()
+			}
+			elements.push(element);
+
 		});
+
+		console.log(JSON.stringify(message));
+		let responseJson = {};
+		if (source === "facebook") {
+			responseJson.fulfillmentMessages = message.fulfillmentMessages; 
+		} 
+
+		else {
+			responseJson = {fulfillmentText: message.fulfillmentText}; 
+		}
+
+		res.json(responseJson);
+		return null;
+	}).catch(error => {
+		console.error(error);
+		let responseJson = prepareError();
+		res.json(responseJson);
+	});
+		     
+}
+
+function prepareCardPayment(store,res){
+	let dataPay = firebase.database().ref('stores/'+store+'/info/payment/formas');
+	dataPay.once("value").then(function(snapshotPay){
+		let quickR = [];
+		snapshotPay.forEach(function(snapForPay){
+			quickR.push(prepareOpt(snapForPay.val(), 'paymentType '+snapForPay.val()));
+		});
+
+		let quickReply = prepareChoice("Como você gostaria de pagar?", quickR);
+		let responseJson = {};
+		responseJson.fulfillmentMessages = [];
+		let message = 
+		{
+			"payload":{
+				"facebook":quickReply
+			}
+		};
+		responseJson.fulfillmentMessages.push(message);
+		res.json(responseJson);
 		return null;
 	}).catch(error => {
 			console.error(error);
