@@ -225,14 +225,27 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 	else if(action === 'gotPaymentMethod'){
 
 		let paymentMethod = parameters.paymentMethod;
-
 		let dataPayment = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/payment');
 		dataPayment.update({
-			"method" : paymentMethod
+		"method" : paymentMethod
 		});
+		if (paymentMethod === "dinheiro"){
+			res.json({"followupEventInput" : prepareFollowUpEvent("wantsChange")});
+		}else{
+			let dataOrder = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
+			let responseJson = prepareReceipt(res, dataOrder, source);
+		}
+	}
+	else if (action === 'gotChange'){
+		let change = parameters.change;
+		console.log("POSICAO " + change.search("."));
+		let dataPayment = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/payment');
 		let dataOrder = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
-		let responseJson = prepareReceipt(res, dataOrder, source);
- 		
+		dataPayment.update({
+			"change" : change
+		});
+		prepareReceipt(res, dataOrder,source);
+
 	}
 });
 
@@ -241,7 +254,6 @@ function prepareReceipt(res, dataOrder, source){
 
 	dataOrder.once('value').then(function(snapshotOrder){
 		let paymentMethod = snapshotOrder.child('payment/method').val();
-		console.log(JSON.stringify(snapshotOrder));
 		snapshotOrder.child('produtos').forEach(function(snapshotProduct){
 			let element ={
 				"title":snapshotProduct.child('produto/name').val(),
@@ -255,16 +267,45 @@ function prepareReceipt(res, dataOrder, source){
 
 		});
 
-		console.log(JSON.stringify(message));
+		let message = [{
+			"payload" : {
+				"facebook" : {
+					"attachment":{
+						"type":"template",
+						"payload":{
+							"template_type":"receipt",
+							"recipient_name":"Fulano", //facebook request get name
+							"order_number":"001", 
+							"currency":"BRL",
+							"payment_method":paymentMethod,       
+							"address":{ // end recolhido
+								"street_1":"Rua Tiradentes",
+								"street_2":"",
+								"city":"Itabira",
+								"postal_code":"35900013",
+								"state":"MG",
+								"country":"BR"
+							},
+							"summary":{ // valores
+								"subtotal":100,
+								"shipping_cost":10,
+								"total_cost":110
+							},
+							"elements":elements
+						}
+					}  
+				}
+			}
+		}];
+
 		let responseJson = {};
 		if (source === "facebook") {
-			responseJson.fulfillmentMessages = message.fulfillmentMessages; 
+			responseJson.fulfillmentMessages = message;
 		} 
 
 		else {
 			responseJson = {fulfillmentText: message.fulfillmentText}; 
 		}
-
 		res.json(responseJson);
 		return null;
 	}).catch(error => {
@@ -389,18 +430,20 @@ function insertOrder(store,userId,res,prodiVT,source){
 						        
 	    //PR.fulfillmentMessages = prepareResponseCart(vetorCar,source,quickR).fulfillmentMessages; //mostrar carro
 	    dataPlace.once("value").then(function(place){
+
 	    	if(place.exists()){
-	    		console.log("Existe");
+	    		console.log("to aqui brother")
+	    		prepareCardPayment(store,res);
 	    	}else{
-	    		console.log("Não");
-	    	}
+	    		console.log("Nao deveria estar aqui brother");
+	    		res.json({"followupEventInput" : prepareFollowUpEvent("getCEP")});	    	}
 	    	return null;
 	    }).catch(error =>{
 	    	console.error(error);
 	    	let responseJson = prepareError();
 	    	res.json(responseJson);
 	    });
-	    res.json({"followupEventInput" : prepareFollowUpEvent("getCEP")});
+
 	    //res.json(PR);
 		return null;
 		
@@ -410,6 +453,7 @@ function insertOrder(store,userId,res,prodiVT,source){
 			res.json(responseJson);
 		});	
 }
+
 
 function insertProduto(store,userId,produto,res,callback){
 	let data = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
@@ -591,7 +635,6 @@ function prepareResponseCart(elements, source, quickR){
     else {
     	responseJson = {fulfillmentText: message.fulfillmentText}; 
     }
-    console.log(JSON.stringify(responseJson));
     return responseJson;	   	
 }
 
@@ -729,10 +772,9 @@ exports.webappSave = functions.https.onRequest((req, res) => { //Toda vez que su
 	var saveFunctions = require('./saveFunctions.js');
 	let store = req.body.store;
 	let action = req.body.action;
-	console.log(JSON.stringify(req.body));
 	if(action === 'saveProduct'){
 		let product = req.body.product;
-		console.log(JSON.stringify(product));
+
 		let productRef = firebase.database().ref('stores/'+store+'/products/'+product.nome);
 		saveFunctions.saveProduct(productRef, product, res);
 	}
