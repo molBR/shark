@@ -238,18 +238,27 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 	}
 	else if (action === 'gotChange'){
 		let change = parameters.change;
-		console.log("POSICAO " + change.search("."));
+		localDot = change.indexOf(".");
+		if(localDot !== -1){
+			if((change.length	- localDot) === 2){
+				change = change + "0";
+			}else if ((change.length - localDot) > 2)
+			{
+				change = change.substring(0,(localDot+3))
+			}
+		}
 		let dataPayment = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/payment');
 		let dataOrder = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
+		let dataPlace = firebase.database().ref('stores/'+store+'/clients/'+userId+'/place');
 		dataPayment.update({
 			"change" : change
 		});
-		prepareReceipt(res, dataOrder,source);
+		prepareReceipt(res, dataPlace, dataOrder,source);
 
 	}
 });
 
-function prepareReceipt(res, dataOrder, source){
+function prepareReceipt(res, dataPlace, dataOrder, source){
 	let elements = [];
 
 	dataOrder.once('value').then(function(snapshotOrder){
@@ -266,7 +275,6 @@ function prepareReceipt(res, dataOrder, source){
 			elements.push(element);
 
 		});
-
 		let message = [{
 			"payload" : {
 				"facebook" : {
