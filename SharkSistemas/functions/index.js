@@ -745,6 +745,7 @@ function cartMessage(order){
     return productPreview;
 }
 
+
 exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir um http request...
 	var getFunctions = require('./getFunctions.js');
 	let store = req.body.store;
@@ -772,6 +773,11 @@ exports.webapp = functions.https.onRequest((req, res) => { //Toda vez que surgir
 	else if (action === 'getDepoimentos'){
 		let data = firebase.database().ref('stores/'+store+'/depoimentos');
 		getFunctions.storeDepoimentos(data, res, store);
+	}
+
+	else if (action === 'getBairros'){
+		let data = firebase.database().ref('stores/'+store+'/bairros');
+		getFunctions.storeBairros(data, res, store);
 	}	
 });
 
@@ -782,11 +788,78 @@ exports.webappSave = functions.https.onRequest((req, res) => { //Toda vez que su
 	let action = req.body.action;
 	if(action === 'saveProduct'){
 		let product = req.body.product;
-
+		console.log(JSON.stringify(product));
 		let productRef = firebase.database().ref('stores/'+store+'/products/'+product.nome);
 		saveFunctions.saveProduct(productRef, product, res);
 	}
-	res.json({"resposta":"nãoOK"});
+	else if(action === 'saveStore'){
+		let storeParameters = req.body;
+		console.log(JSON.stringify(req.body));
+		let storeRef = firebase.database().ref('stores/'+store);
+		saveFunctions.saveStore(storeRef, storeParameters);
+		res.json({'resposta':'ok'});
+	}
 
+	else if(action === 'saveBairro'){
+		let bairro = req.body.bairro;
+		let valor = req.body.valor;
+		let subAction = req.body.subAction;
+		let bairrosRef = firebase.database().ref('stores/'+store+'/bairros');
+		let bairroRef = firebase.database().ref('stores/'+store+'/bairros/'+bairro);
+		let bairrosDeleteRef = firebase.database().ref('stores/'+store+'/bairrosDelete/'+bairro);
+		let bairrosTempRef;
+		
+		if(subAction === 'save'){
+			bairrosTempRef = firebase.database().ref('stores/'+store+'/bairrosTemp');
+			bairrosDeleteRef = firebase.database().ref('stores/'+store+'/bairrosDelete');
+			saveBairro(bairrosTempRef, bairrosDeleteRef, store, res);
+		}
+		else{
+			bairrosTempRef = firebase.database().ref('stores/'+store+'/bairrosTemp/'+bairro);
+			saveFunctions.saveBairro(subAction, res, bairroRef, bairrosRef, bairrosTempRef, bairrosDeleteRef, bairro, valor);
+		}
+	}
+
+	else if(action === 'saveFuncionamento'){
+		let funcionamentoTurnos = req.body.funcionamento;
+		let funcionamentoRef = firebase.database().ref('stores/'+store+'/info');
+		saveFunctions.saveFuncionamento(res, funcionamentoRef, funcionamentoTurnos);
+	}
+
+	else if(action === 'saveBandeiras'){
+		let bandeirasCred = req.body.bandeirasCred;
+		let bandeirasDeb = req.body.bandeirasDeb;
+		let bandeirasAli = req.body.bandeirasAli;
+		let subAction = req.body.subAction;
+		let bandeiraRef = firebase.database().ref('stores/'+store+'/info/bandeiras');
+		saveFunctions.saveBandeira(res, bandeirasCred, bandeirasDeb, bandeirasAli, bandeiraRef);
+	}
 });
+
+function saveBairro(bairrosTempRef, bairrosDeleteRef, store, res){
+	bairrosTempRef.once("value").then(function(snapshot) {
+		snapshot.forEach(function(snapshotBairros){
+			let snapshotRef = firebase.database().ref('stores/'+store+'/bairros/'+snapshotBairros.key);
+			snapshotRef.update({
+				"bairro":snapshotBairros.key,
+				"valor":snapshotBairros.child('valor').val()
+			});
+		});
+		bairrosDeleteRef.once("value").then(function(snapshotDelete) {
+			snapshotDelete.forEach(function(snapshotBairrosDelete){
+				let snapshotDeleteRef = firebase.database().ref('stores/'+store+'/bairros/'+snapshotBairrosDelete.key);
+				snapshotDeleteRef.remove();
+			});
+			bairrosTempRef.remove();
+			res.json({'resposta':'ok'});
+			return null;
+		}).catch(error => {
+			console.error(error);
+		});
+		return null;
+	}).catch(error => {
+		console.error(error);
+	});
+		
+}
 			

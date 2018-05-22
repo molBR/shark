@@ -1,4 +1,3 @@
-
 module.exports={
 
 	storeInfo: function (data, res, store) {
@@ -13,12 +12,34 @@ module.exports={
 			storeData.site = snapshot.child('site').val();
 			storeData.funcionamento = snapshot.child('funcionamento').val();
 			storeData.pagamento = {};
-			storeData.pagamento.formas = snapshot.child('payment/formas').val();
+			storeData.pagamento.dinheiro = snapshot.child('dinheiro').val();
+			storeData.pagamento.debito = snapshot.child('debito').val();
+			storeData.pagamento.credito = snapshot.child('credito').val();
+			storeData.pagamento.alimentacao = snapshot.child('alimentacao').val();
+			storeData.pagamento.online = snapshot.child('link').val();
 			storeData.funcionamentoTexto = snapshot.child('funcionamentoTexto').val();
-			storeData.pagamento.bandeirasDeb = snapshot.child('payment/band').val();
-			storeData.pagamento.bandeirasCre = snapshot.child('payment/bandCre').val();
-			storeData.pagamento.bandAlim = snapshot.child('payment/bandAlim').val();
-			storeData.cpfNota = snapshot.child('cpfNota').val();
+			storeData.pagamento.bandeirasDeb = [];
+			storeData.pagamento.bandeirasCred = [];
+			storeData.pagamento.bandeirasAli = [];
+			snapshot.child('bandeiras/bandeirasCred').forEach(function(snapshotDebito){
+				let bandeiraDeb = {};
+				bandeiraDeb.nome = snapshotDebito.key;
+				bandeiraDeb.aceita = snapshotDebito.val();
+				storeData.pagamento.bandeirasDeb.push(bandeiraDeb);
+			}); 
+			snapshot.child('bandeiras/bandeirasCred').forEach(function(snapshotCredito){
+				let bandeiraCred = {};
+				bandeiraCred.nome = snapshotCredito.key;
+				bandeiraCred.aceita = snapshotCredito.val();
+				storeData.pagamento.bandeirasCred.push(bandeiraCred);
+			}); 
+			snapshot.child('bandeiras/bandeirasAli').forEach(function(snapshotAlimentacao){
+				let bandeiraAli = {};
+				bandeiraAli.nome = snapshotAlimentacao.key;
+				bandeiraAli.aceita = snapshotAlimentacao.val();
+				storeData.pagamento.bandeirasAli.push(bandeiraAli);
+			}); 
+ 			storeData.cpfNota = snapshot.child('cpfNota').val();
 			storeData.linkID = snapshot.child('linkID').val();
 			res.json(storeData);
 			return null;
@@ -140,6 +161,23 @@ module.exports={
 				depoimento.classif = snapshotDepoimentos.child('classif').val();
 				depoimento.data = date.getDate()+'/'+date.getMonth()+'/'+date.getFullYear();
 				storeData.depoimentos.push(depoimento);
+			});			
+			res.json(storeData);
+			return null;
+		}).catch(error => {
+			console.error(error);
+			res.json({});
+		});	
+	},
+	storeBairros: function (data, res, store){
+		let storeData = {};
+		data.once("value").then(function(snapshot) {
+			storeData.bairros = [];
+			snapshot.forEach(function(snapshotBairros){
+				let bairro = {};
+				bairro.nome = snapshotBairros.key;
+				bairro.valor = snapshotBairros.val();
+				storeData.bairros.push(bairro);
 			});			
 			res.json(storeData);
 			return null;
