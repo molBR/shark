@@ -248,7 +248,8 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 			}
 		}
 		let dataPayment = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/payment');
-		let dataOrder = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
+		//let dataOrder = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
+		let dataOrder = firebase.database().ref('stores/'+store+'/clients/'+userId);
 		let dataPlace = firebase.database().ref('stores/'+store+'/clients/'+userId+'/place');
 		dataPayment.update({
 			"change" : change
@@ -258,12 +259,17 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 	}
 });
 
+
 function prepareReceipt(res, dataPlace, dataOrder, source){
 	let elements = [];
-
 	dataOrder.once('value').then(function(snapshotOrder){
-		let paymentMethod = snapshotOrder.child('payment/method').val();
-		snapshotOrder.child('produtos').forEach(function(snapshotProduct){
+		let paymentMethod = snapshotOrder.child('orderTemp/payment/method').val();
+		let CEP = snapshotOrder.child('place/CEP').val(); 
+		let cidade = snapshotOrder.child('place/cidade');
+		let logradouro = snapshotOrder.child('place/logradouro');
+		let numero = snapshotOrder.child('place/numero');
+		let refCom = snapshotOrder.child('place/refCom');
+		snapshotOrder.child('orderTemp/produtos').forEach(function(snapshotProduct){
 			let element ={
 				"title":snapshotProduct.child('produto/name').val(),
 				"subtitle":'',
@@ -287,10 +293,10 @@ function prepareReceipt(res, dataPlace, dataOrder, source){
 							"currency":"BRL",
 							"payment_method":paymentMethod,       
 							"address":{ // end recolhido
-								"street_1":"Rua Tiradentes",
-								"street_2":"",
-								"city":"Itabira",
-								"postal_code":"35900013",
+								"street_1":logradouro,
+								"street_2":refCom,
+								"city":cidade,
+								"postal_code":CEP,
 								"state":"MG",
 								"country":"BR"
 							},
@@ -329,6 +335,7 @@ function prepareCardPayment(store,res){
 	dataPay.once("value").then(function(snapshotPay){
 		let quickR = [];
 		snapshotPay.forEach(function(snapForPay){
+
 			quickR.push(prepareOpt(snapForPay.val(), 'paymentType '+snapForPay.val()));
 		});
 
