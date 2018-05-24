@@ -10,30 +10,31 @@ module.exports={
 		return null;
 	},
 
-	saveStore: function (storeRef, storeParams){
-		storeRef.update({
-			'basicInfo':{
-				'imagem':storeParams.basicInfo.imagem,
-				'schedule':storeParams.basicInfo.schedule,
-				'type':storeParams.basicInfo.type
-			},
-			'info':{
-				'cpfNota':storeParams.info.cpfNota,
-				'email':storeParams.info.email,
-				'end': storeParams.info.end,
-				'facebook':storeParams.info.facebook,
-				'funcionamentoTexto':storeParams.info.funcionamentoTexto,
-				'instagram':storeParams.info.instagram,
-				'linkID':storeParams.info.linkID,
-				'credito':storeParams.info.credito,
-				'debito':storeParams.info.debito,
-				'dinheiro':storeParams.info.dinheiro,
-				'alimentacao':storeParams.info.alimentacao,
-				'link':storeParams.info.link,
-				'phone':storeParams.info.phone,
-				'site':storeParams.info.site,
-				'whatsapp':storeParams.info.whatsapp
+	saveBasicInfo: function (storeBasicRef, storeEndRef, storeParams){
+		storeBasicRef.update({
+			'nome':storeParams.nome,
+			'imagem':storeParams.imagem,
+			'type':storeParams.type
+		});
+		storeEndRef.update({
+			'end':{
+				'logradouro':storeParams.endLogradouro,
+				'bairro':storeParams.endBairro,
+				'numero':storeParams.endNumero,
+				'complemento':storeParams.endComplemento,
+				'cep':storeParams.endCEP
 			}
+		});
+	},
+	saveInfo: function (storeInfoRef, storeParams){
+		storeInfoRef.update({
+			'email':storeParams.email,
+			'facebook':storeParams.facebook,
+			'funcionamentoTexto':storeParams.funcionamentoTexto,
+			'instagram':storeParams.instagram,
+			'phone':storeParams.phone,
+			'site':storeParams.site,
+			'whatsapp':storeParams.whatsapp
 		});
 		return null;
 	},
@@ -123,42 +124,54 @@ module.exports={
 		});
 	},
 
-	saveFuncionamento: function (res, funcionamentoRef, funcionamentoTurnos){
+	saveFuncionamento: function (res, storeInfoRef, funcionamentoTexto, funcionamentoRef, funcionamentoTurnos){
 		funcionamentoRef.update({
-				"funcionamento":funcionamentoTurnos
-			});
+			"funcionamento":funcionamentoTurnos
+		});
+		storeInfoRef.update({
+			"funcionamentoTexto":funcionamentoTexto
+		});
 		res.json({"resposta":"OK"});
 		return null;
 	},
 
-	saveBandeira: function (res, bandeirasCred, bandeirasDeb, bandeirasAli, bandeiraRef){
-		bandeiraRef.update({
-			'bandeirasCred':{
-				'MasterCard':bandeirasCred.mastercard,
-				'Visa':bandeirasCred.visa,
-				'Elo':bandeirasCred.elo,
-				'Diners Club International':bandeirasCred.diners,
-				'HiperCard':bandeirasCred.hipercard,
-				'Sodexo':bandeirasCred.sodexo,
-				'American Express':bandeirasCred.americanexpress,
-				'JCB':bandeirasCred.jcb
+	savePagamento: function (res, pagamentoParameters, pagamentoRef){
+		pagamentoRef.update({
+			'bandeiras':{
+				'bandeirasCred':{
+					'MasterCard':pagamentoParameters.bandeirasCred.mastercard,
+					'Visa':pagamentoParameters.bandeirasCred.visa,
+					'Elo':pagamentoParameters.bandeirasCred.elo,
+					'Diners Club International':pagamentoParameters.bandeirasCred.diners,
+					'HiperCard':pagamentoParameters.bandeirasCred.hipercard,
+					'Sodexo':pagamentoParameters.bandeirasCred.sodexo,
+					'American Express':pagamentoParameters.bandeirasCred.americanexpress,
+					'JCB':pagamentoParameters.bandeirasCred.jcb
+				},
+				'bandeirasDeb':{
+					'MasterCard':pagamentoParameters.bandeirasDeb.mastercard,
+					'Visa':pagamentoParameters.bandeirasDeb.visa,
+					'Elo':pagamentoParameters.bandeirasDeb.elo,
+					'Diners Club International':pagamentoParameters.bandeirasDeb.diners,
+					'HiperCard':pagamentoParameters.bandeirasDeb.hipercard,
+					'Sodexo':pagamentoParameters.bandeirasDeb.sodexo,
+					'American Express':pagamentoParameters.bandeirasDeb.americanexpress,
+					'JCB':pagamentoParameters.bandeirasDeb.jcb
+				},
+				'bandeirasAli':{
+					'Alelo':pagamentoParameters.bandeirasAli.alelo,
+					'VR Refeição':pagamentoParameters.bandeirasAli.vr,
+					'Sodexo':pagamentoParameters.bandeirasAli.sodexo,
+					'Ticket Restaurante':pagamentoParameters.bandeirasAli.ticket
+				}
 			},
-			'bandeirasDeb':{
-				'MasterCard':bandeirasDeb.mastercard,
-				'Visa':bandeirasDeb.visa,
-				'Elo':bandeirasDeb.elo,
-				'Diners Club International':bandeirasDeb.diners,
-				'HiperCard':bandeirasDeb.hipercard,
-				'Sodexo':bandeirasDeb.sodexo,
-				'American Express':bandeirasDeb.americanexpress,
-				'JCB':bandeirasDeb.jcb
-			},
-			'bandeirasAli':{
-				'Alelo':bandeirasAli.alelo,
-				'VR Refeição':bandeirasAli.vr,
-				'Sodexo':bandeirasAli.sodexo,
-				'Ticket Restaurante':bandeirasAli.ticket
-			}
+			'cpfNota':pagamentoParameters.cpfNota,
+			'linkID':pagamentoParameters.linkID,
+			'credito':pagamentoParameters.credito,
+			'debito':pagamentoParameters.debito,
+			'dinheiro':pagamentoParameters.dinheiro,
+			'alimentacao':pagamentoParameters.alimentacao,
+			'link':pagamentoParameters.link
 		});
 		res.json({"resposta":"OK"});
 		return null;

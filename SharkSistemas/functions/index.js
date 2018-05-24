@@ -799,11 +799,17 @@ exports.webappSave = functions.https.onRequest((req, res) => { //Toda vez que su
 		let productRef = firebase.database().ref('stores/'+store+'/products/'+product.nome);
 		saveFunctions.saveProduct(productRef, product, res);
 	}
-	else if(action === 'saveStore'){
+	else if(action === 'saveBasicInfo'){
 		let storeParameters = req.body;
-		console.log(JSON.stringify(req.body));
-		let storeRef = firebase.database().ref('stores/'+store);
-		saveFunctions.saveStore(storeRef, storeParameters);
+		let storeEndRef = firebase.database().ref('stores/'+store+'/info');
+		let storeBasicRef = firebase.database().ref('stores/'+store+'/basicInfo');
+		saveFunctions.saveBasicInfo(storeBasicRef, storeEndRef, storeParameters);
+		res.json({'resposta':'ok'});
+	}
+	else if(action === 'saveInfo'){
+		let storeParameters = req.body;
+		let storeInfoRef = firebase.database().ref('stores/'+store+'/info');
+		saveFunctions.saveInfo(storeInfoRef, storeParameters);
 		res.json({'resposta':'ok'});
 	}
 
@@ -830,16 +836,16 @@ exports.webappSave = functions.https.onRequest((req, res) => { //Toda vez que su
 	else if(action === 'saveFuncionamento'){
 		let funcionamentoTurnos = req.body.funcionamento;
 		let funcionamentoRef = firebase.database().ref('stores/'+store+'/info');
-		saveFunctions.saveFuncionamento(res, funcionamentoRef, funcionamentoTurnos);
+		let funcionamentoTexto = req.body.funcionamentoTexto;
+		let storeInfoRef = firebase.database().ref('stores/'+store+'/info');
+		saveFunctions.saveFuncionamento(res, storeInfoRef, funcionamentoTexto, funcionamentoRef, funcionamentoTurnos);
 	}
 
-	else if(action === 'saveBandeiras'){
-		let bandeirasCred = req.body.bandeirasCred;
-		let bandeirasDeb = req.body.bandeirasDeb;
-		let bandeirasAli = req.body.bandeirasAli;
+	else if(action === 'savePagamento'){
+		let pagamentoParameters = req.body;
 		let subAction = req.body.subAction;
-		let bandeiraRef = firebase.database().ref('stores/'+store+'/info/bandeiras');
-		saveFunctions.saveBandeira(res, bandeirasCred, bandeirasDeb, bandeirasAli, bandeiraRef);
+		let pagamentoRef = firebase.database().ref('stores/'+store+'/info/payment');
+		saveFunctions.savePagamento(res, pagamentoParameters, pagamentoRef);
 	}
 });
 

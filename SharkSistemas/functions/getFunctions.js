@@ -12,35 +12,35 @@ module.exports={
 			storeData.site = snapshot.child('site').val();
 			storeData.funcionamento = snapshot.child('funcionamento').val();
 			storeData.pagamento = {};
-			storeData.pagamento.dinheiro = snapshot.child('dinheiro').val();
-			storeData.pagamento.debito = snapshot.child('debito').val();
-			storeData.pagamento.credito = snapshot.child('credito').val();
-			storeData.pagamento.alimentacao = snapshot.child('alimentacao').val();
-			storeData.pagamento.online = snapshot.child('link').val();
+			storeData.pagamento.dinheiro = snapshot.child('payment/dinheiro').val();
+			storeData.pagamento.debito = snapshot.child('payment/debito').val();
+			storeData.pagamento.credito = snapshot.child('payment/credito').val();
+			storeData.pagamento.alimentacao = snapshot.child('payment/alimentacao').val();
+			storeData.pagamento.online = snapshot.child('payment/link').val();
 			storeData.funcionamentoTexto = snapshot.child('funcionamentoTexto').val();
 			storeData.pagamento.bandeirasDeb = [];
 			storeData.pagamento.bandeirasCred = [];
 			storeData.pagamento.bandeirasAli = [];
-			snapshot.child('bandeiras/bandeirasCred').forEach(function(snapshotDebito){
+			snapshot.child('payment/bandeiras/bandeirasCred').forEach(function(snapshotDebito){
 				let bandeiraDeb = {};
 				bandeiraDeb.nome = snapshotDebito.key;
 				bandeiraDeb.aceita = snapshotDebito.val();
 				storeData.pagamento.bandeirasDeb.push(bandeiraDeb);
 			}); 
-			snapshot.child('bandeiras/bandeirasCred').forEach(function(snapshotCredito){
+			snapshot.child('payment/bandeiras/bandeirasCred').forEach(function(snapshotCredito){
 				let bandeiraCred = {};
 				bandeiraCred.nome = snapshotCredito.key;
 				bandeiraCred.aceita = snapshotCredito.val();
 				storeData.pagamento.bandeirasCred.push(bandeiraCred);
 			}); 
-			snapshot.child('bandeiras/bandeirasAli').forEach(function(snapshotAlimentacao){
+			snapshot.child('payment/bandeiras/bandeirasAli').forEach(function(snapshotAlimentacao){
 				let bandeiraAli = {};
 				bandeiraAli.nome = snapshotAlimentacao.key;
 				bandeiraAli.aceita = snapshotAlimentacao.val();
 				storeData.pagamento.bandeirasAli.push(bandeiraAli);
 			}); 
- 			storeData.cpfNota = snapshot.child('cpfNota').val();
-			storeData.linkID = snapshot.child('linkID').val();
+ 			storeData.cpfNota = snapshot.child('payment/cpfNota').val();
+			storeData.linkID = snapshot.child('payment/linkID').val();
 			res.json(storeData);
 			return null;
 		}).catch(error => {
@@ -117,7 +117,7 @@ module.exports={
 	storeBasicInfo: function (data, res, store){
 		let storeData = {};
 		data.once("value").then(function(snapshot) {
-			storeData.nome = snapshot.key;
+			storeData.nome = snapshot.child('nome').val();
 			storeData.imagem = snapshot.child('imagem').val();
 			storeData.agendamento = snapshot.child('schedule').val();
 			storeData.aberto = snapshot.child('open').val();
