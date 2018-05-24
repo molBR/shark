@@ -232,8 +232,8 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 		if (paymentMethod === "dinheiro"){
 			res.json({"followupEventInput" : prepareFollowUpEvent("wantsChange")});
 		}else{
-			let dataOrder = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
-			let responseJson = prepareReceipt(res, dataOrder, source);
+			let dataOrder = firebase.database().ref('stores/'+store);
+			prepareReceipt(res, dataOrder,userId,source);
 		}
 	}
 	else if (action === 'gotChange'){
@@ -249,27 +249,36 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 		}
 		let dataPayment = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp/payment');
 		//let dataOrder = firebase.database().ref('stores/'+store+'/clients/'+userId+'/orderTemp');
-		let dataOrder = firebase.database().ref('stores/'+store+'/clients/'+userId);
-		let dataPlace = firebase.database().ref('stores/'+store+'/clients/'+userId+'/place');
+		let dataOrder = firebase.database().ref('stores/'+store);
 		dataPayment.update({
 			"change" : change
 		});
-		prepareReceipt(res, dataPlace, dataOrder,source);
+		prepareReceipt(res, dataOrder,userId,source);
 
 	}
 });
 
 
-function prepareReceipt(res, dataPlace, dataOrder, source){
+function prepareReceipt(res, dataOrder,userId, source){
 	let elements = [];
 	dataOrder.once('value').then(function(snapshotOrder){
-		let paymentMethod = snapshotOrder.child('orderTemp/payment/method').val();
-		let CEP = snapshotOrder.child('place/CEP').val(); 
-		let cidade = snapshotOrder.child('place/cidade');
-		let logradouro = snapshotOrder.child('place/logradouro');
-		let numero = snapshotOrder.child('place/numero');
-		let refCom = snapshotOrder.child('place/refCom');
-		snapshotOrder.child('orderTemp/produtos').forEach(function(snapshotProduct){
+		let paymentMethod = snapshotOrder.child('clients/'+userId+'/orderTemp/payment/method').val();
+		let CEP = snapshotOrder.child('clients/'+userId+'/place/CEP').val(); 
+		let cidade = snapshotOrder.child('clients/'+userId+'/place/cidade').val();
+		let logradouro = snapshotOrder.child('clients/'+userId+'/place/logradouro').val();
+		let numero = snapshotOrder.child('clients/'+userId+'/place/numero').val();
+		let refCom = snapshotOrder.child('clients/'+userId+'/place/refCom').val();
+		let bairro = snapshotOrder.child('clients/'+userId+'/place/bairro').val();
+		let shipping_cost =15;	
+		if (snapshotOrder.child('bairros/'+bairro).exists()){
+			shipping_cost = snapshotOrder.child('bairros/'+bairro+'/valor').val();
+		}else{
+			console.log("não encontrado");
+		}
+
+		let valor = 0;
+		snapshotOrder.child('clients/'+userId+'/orderTemp/produtos').forEach(function(snapshotProduct){
+			valor = valor + parseFloat(snapshotProduct.child('produto/value').val()) * parseInt(snapshotProduct.child('produto/quantity').val());
 			let element ={
 				"title":snapshotProduct.child('produto/name').val(),
 				"subtitle":'',
@@ -281,6 +290,8 @@ function prepareReceipt(res, dataPlace, dataOrder, source){
 			elements.push(element);
 
 		});
+		let total = valor + shipping_cost;
+
 		let message = [{
 			"payload" : {
 				"facebook" : {
@@ -301,9 +312,9 @@ function prepareReceipt(res, dataPlace, dataOrder, source){
 								"country":"BR"
 							},
 							"summary":{ // valores
-								"subtotal":100,
-								"shipping_cost":10,
-								"total_cost":110
+								"subtotal":valor,
+								"shipping_cost":shipping_cost,
+								"total_cost":total
 							},
 							"elements":elements
 						}
@@ -335,7 +346,6 @@ function prepareCardPayment(store,res){
 	dataPay.once("value").then(function(snapshotPay){
 		let quickR = [];
 		snapshotPay.forEach(function(snapForPay){
-
 			quickR.push(prepareOpt(snapForPay.val(), 'paymentType '+snapForPay.val()));
 		});
 
