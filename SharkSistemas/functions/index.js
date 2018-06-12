@@ -256,6 +256,9 @@ exports.alimentos = functions.https.onRequest((req, res) => { //Toda vez que sur
 		prepareReceipt(res, dataOrder,userId,source);
 
 	}
+	else if (action === 'gotOrderMethod'){
+		console.log("QUALE BROTHER OLHA ESSES PARAMETERS: " + JSON.stringify(parameters) );
+	}
 });
 
 
@@ -288,11 +291,10 @@ function prepareReceipt(res, dataOrder,userId, source){
 				"image_url":"http://res.cloudinary.com/uaihome/image/upload/"+snapshotProduct.child('produto/link').val()
 			}
 			elements.push(element);
-		console.log("OLHA O VALOR" + valor);
 		});
 		let total = valor + shipping_cost;
 
-		let message = [{
+		let message = {
 			"payload" : {
 				"facebook" : {
 					"attachment":{
@@ -321,13 +323,25 @@ function prepareReceipt(res, dataOrder,userId, source){
 					}  
 				}
 			}
-		}];
+		};
 
 		let responseJson = {};
+		responseJson.fulfillmentMessages = [];
+		let quickR = []
+		quickR.push(prepareOpt('Confirmar', 'orderType ' + 'confirmar'));
+		quickR.push(prepareOpt('Editar pedido', 'orderType ' + 'editarPedido'));
+		quickR.push(prepareOpt('Editar endereço', 'orderType ' + 'editarEnd'));
+		quickR.push(prepareOpt('Cancelar', 'orderType ' + 'cancelar'));
+		quickR = prepareChoice("Essa é a sua notinha, podemos finalizar a compra?", quickR);
+		message1 = {
+			"payload" : {
+				"facebook" : quickR
+			}
+		};
 		if (source === "facebook") {
-			responseJson.fulfillmentMessages = message;
+			responseJson.fulfillmentMessages.push(message);
+			responseJson.fulfillmentMessages.push(message1);
 		} 
-
 		else {
 			responseJson = {fulfillmentText: message.fulfillmentText}; 
 		}
