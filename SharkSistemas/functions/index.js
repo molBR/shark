@@ -270,7 +270,7 @@ function prepareReceipt(res, dataOrder,userId, source){
 		let refCom = snapshotOrder.child('clients/'+userId+'/place/refCom').val();
 		let bairro = snapshotOrder.child('clients/'+userId+'/place/bairro').val();
 		let shipping_cost =15;	
-		if (snapshotOrder.child('bairros/'+bairro).exists()){
+			if (snapshotOrder.child('bairros/'+bairro).exists()){
 			shipping_cost = snapshotOrder.child('bairros/'+bairro+'/valor').val();
 		}else{
 			console.log("não encontrado");
@@ -288,7 +288,7 @@ function prepareReceipt(res, dataOrder,userId, source){
 				"image_url":"http://res.cloudinary.com/uaihome/image/upload/"+snapshotProduct.child('produto/link').val()
 			}
 			elements.push(element);
-
+		console.log("OLHA O VALOR" + valor);
 		});
 		let total = valor + shipping_cost;
 
